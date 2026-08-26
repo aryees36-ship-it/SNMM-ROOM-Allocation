@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>SNMM 2026 | Finance & Room Allocation</title>
+
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  >
+
+  <link
+    rel="stylesheet"
+    href="finance.css"
+  >
+</head>
+
+<body>
+
+<!-- ======================================================
+     NAVBAR
+====================================================== -->
+
+<nav class="navbar navbar-dark bg-primary shadow-sm">
+  <div class="container-fluid">
+
+    <span class="navbar-brand fw-bold">
+      SNMM 2026
+    </span>
+
+    <div class="d-flex align-items-center gap-3">
+
+      <span class="navbar-text text-white d-none d-md-inline">
+        Finance & Room Allocation
+      </span>
+
+      <button
+        type="button"
+        id="themeToggle"
+        class="btn btn-light btn-sm theme-toggle"
+        onclick="toggleTheme()"
+        title="Toggle dark/light mode"
+      >
+        🌙 Dark Mode
+      </button>
+
+    </div>
+
+  </div>
+</nav>
+
+
+<!-- ======================================================
+     MAIN CONTAINER
+====================================================== -->
+
+<div class="container-fluid py-4">
+
+  <!-- ====================================================
+       PAGE HEADER
+  ===================================================== -->
+
+  <div class="page-header mb-4">
+
+    <div>
+      <h2 class="fw-bold">
+        Finance & Room Allocation
+      </h2>
+
+      <p class="text-muted mb-0">
+        Manage accommodation payments, approvals and room assignments.
+      </p>
+    </div>
+
+    <button
+      class="btn btn-outline-primary"
+      onclick="loadReservations()"
+    >
+      🔄 Refresh
+    </button>
+
+  </div>
+
+
+  <!-- ====================================================
+       SUMMARY CARDS
+  ===================================================== -->
+
+  <div class="row g-3 mb-4">
+
+    <div class="col-md-3">
+      <div class="summary-card">
+        <div class="summary-icon">
+          📋
+        </div>
+
+        <div>
+          <small>Total Reservations</small>
+          <h3 id="totalReservations">0</h3>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="col-md-3">
+      <div class="summary-card">
+        <div class="summary-icon">
+          💰
+        </div>
+
+        <div>
+          <small>Paid</small>
+          <h3 id="paidReservations">0</h3>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="col-md-3">
+      <div class="summary-card">
+        <div class="summary-icon">
+          ✅
+        </div>
+
+        <div>
+          <small>Approved</small>
+          <h3 id="approvedReservations">0</h3>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="col-md-3">
+      <div class="summary-card">
+        <div class="summary-icon">
+          🏨
+        </div>
+
+        <div>
+          <small>Allocated</small>
+          <h3 id="allocatedReservations">0</h3>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ====================================================
+       ALERT
+  ===================================================== -->
+
+  <div id="messageArea"></div>
+
+
+  <!-- ====================================================
+       SEARCH
+  ===================================================== -->
+
+  <div class="card shadow-sm mb-4">
+
+    <div class="card-body">
+
+      <div class="row g-3 align-items-end">
+
+        <div class="col-md-8">
+
+          <label class="form-label fw-semibold">
+            Search Reservation
+          </label>
+
+          <input
+            type="text"
+            id="searchInput"
+            class="form-control"
+            placeholder="Search by Reservation ID, Registration Number or Participant Name..."
+            oninput="filterReservations()"
+          >
+
+        </div>
+
+
+        <div class="col-md-4">
+
+          <label class="form-label fw-semibold">
+            Status
+          </label>
+
+          <select
+            id="statusFilter"
+            class="form-select"
+            onchange="filterReservations()"
+          >
+
+            <option value="All">
+              All Reservations
+            </option>
+
+            <option value="Reserved">
+              Reserved
+            </option>
+
+            <option value="Paid">
+              Paid
+            </option>
+
+            <option value="Approved">
+              Approved
+            </option>
+
+            <option value="Allocated">
+              Allocated
+            </option>
+
+            <option value="Cancelled">
+              Cancelled
+            </option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ====================================================
+       RESERVATIONS TABLE
+  ===================================================== -->
+
+  <div class="card shadow-sm">
+
+    <div class="card-header bg-white">
+
+      <h5 class="mb-0 fw-bold">
+        Accommodation Reservations
+      </h5>
+
+    </div>
+
+
+    <div class="table-responsive">
+
+      <table class="table table-hover align-middle mb-0">
+
+        <thead class="table-light">
+
+          <tr>
+
+            <th>Reservation</th>
+
+            <th>Participant</th>
+
+            <th>Room Type</th>
+
+            <th>Amount</th>
+
+            <th>Payment</th>
+
+            <th>Approval</th>
+
+            <th>Allocation</th>
+
+            <th>Action</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody id="reservationTable">
+
+          <tr>
+
+            <td
+              colspan="8"
+              class="text-center py-5"
+            >
+
+              <div class="spinner-border text-primary"></div>
+
+              <p class="mt-2 mb-0">
+                Loading reservations...
+              </p>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ======================================================
+     RESERVATION DETAILS MODAL
+====================================================== -->
+
+<div
+  class="modal fade"
+  id="reservationModal"
+  tabindex="-1"
+>
+
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+
+    <div class="modal-content">
+
+      <div class="modal-header">
+
+        <h5 class="modal-title fw-bold">
+          Reservation Details
+        </h5>
+
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+
+      </div>
+
+
+      <div class="modal-body">
+
+        <div id="reservationDetails"></div>
+
+      </div>
+
+
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+        >
+          Close
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ======================================================
+     PAYMENT MODAL
+====================================================== -->
+
+<div
+  class="modal fade"
+  id="paymentModal"
+  tabindex="-1"
+>
+
+  <div class="modal-dialog modal-dialog-centered">
+
+    <div class="modal-content">
+
+      <div class="modal-header">
+
+        <h5 class="modal-title fw-bold">
+          Confirm Payment
+        </h5>
+
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+
+      </div>
+
+
+      <div class="modal-body">
+
+        <input
+          type="hidden"
+          id="paymentReservationId"
+        >
+
+
+        <div class="alert alert-info">
+
+          Confirm that the accommodation payment
+          has been received before proceeding.
+
+        </div>
+
+
+        <div class="mb-3">
+
+          <label class="form-label fw-semibold">
+            Payment Reference
+          </label>
+
+          <input
+            type="text"
+            id="paymentReference"
+            class="form-control"
+            placeholder="Enter payment reference"
+          >
+
+        </div>
+
+      </div>
+
+
+      <div class="modal-footer">
+
+        <button
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="btn btn-success"
+          onclick="confirmPayment()"
+        >
+          ✓ Confirm Payment
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ======================================================
+     ALLOCATION MODAL
+====================================================== -->
+
+<div
+  class="modal fade"
+  id="allocationModal"
+  tabindex="-1"
+>
+
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+
+    <div class="modal-content">
+
+      <div class="modal-header">
+
+        <h5 class="modal-title fw-bold">
+          Room Allocation
+        </h5>
+
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+
+      </div>
+
+
+      <div class="modal-body">
+
+        <input
+          type="hidden"
+          id="allocationReservationId"
+        >
+
+
+        <div id="allocationParticipant"
+             class="allocation-participant mb-4">
+        </div>
+
+
+        <div class="row g-3">
+
+          <div class="col-md-4">
+
+            <label class="form-label fw-semibold">
+              Block Name
+            </label>
+
+            <input
+              type="text"
+              id="blockname"
+              class="form-control"
+            >
+
+          </div>
+
+
+          <div class="col-md-4">
+
+            <label class="form-label fw-semibold">
+              Room Number
+            </label>
+
+            <input
+              type="text"
+              id="roomNumber"
+              class="form-control"
+              placeholder="e.g. 101"
+            >
+
+          </div>
+
+
+          <div class="col-md-4">
+
+            <label class="form-label fw-semibold">
+              Bed Number
+            </label>
+
+            <input
+              type="text"
+              id="bedNumber"
+              class="form-control"
+              placeholder="e.g. Bed 1"
+            >
+
+          </div>
+
+        </div>
+
+
+        <div
+          id="allocationMessage"
+          class="mt-3"
+        ></div>
+
+      </div>
+
+
+      <div class="modal-footer">
+
+        <button
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="btn btn-primary"
+          onclick="submitAllocation()"
+        >
+          🏨 Allocate Room
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ======================================================
+     LOADING OVERLAY
+====================================================== -->
+
+<div
+  id="loadingOverlay"
+  class="loading-overlay d-none"
+>
+
+  <div class="loading-box">
+
+    <div
+      class="spinner-border text-primary"
+      style="width:3rem;height:3rem"
+    ></div>
+
+    <p class="mt-3 mb-0">
+      Processing...
+    </p>
+
+  </div>
+
+</div>
+
+
+<!-- ======================================================
+     BOOTSTRAP
+====================================================== -->
+
+<script
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+></script>
+
+
+<!-- ======================================================
+     APP JS
+====================================================== -->
+
+<script src="finance.js"></script>
+
+</body>
+</html>

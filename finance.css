@@ -1,0 +1,569 @@
+/* ======================================================
+   GLOBAL
+====================================================== */
+
+body {
+  background: #f5f7fb;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #212529;
+}
+
+
+/* ======================================================
+   PAGE HEADER
+====================================================== */
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+
+/* ======================================================
+   SUMMARY CARDS
+====================================================== */
+
+.summary-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  box-shadow:
+    0 3px 12px rgba(0, 0, 0, 0.06);
+
+  height: 100%;
+}
+
+
+.summary-icon {
+  width: 55px;
+  height: 55px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background: #eef4ff;
+
+  font-size: 25px;
+}
+
+
+.summary-card small {
+  color: #6c757d;
+}
+
+
+.summary-card h3 {
+  margin: 3px 0 0;
+  font-weight: 700;
+}
+
+
+/* ======================================================
+   CARDS
+====================================================== */
+
+.card {
+  border: none;
+  border-radius: 12px;
+}
+
+
+/* ======================================================
+   TABLE
+====================================================== */
+
+.table {
+  background: #ffffff;
+}
+
+
+.table thead th {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+
+.table tbody td {
+  font-size: 14px;
+}
+
+
+.reservation-id {
+  font-weight: 700;
+  color: #0d6efd;
+}
+
+
+.participant-name {
+  font-weight: 600;
+}
+
+
+.room-name {
+  max-width: 220px;
+}
+
+
+/* ======================================================
+   STATUS BADGES
+====================================================== */
+
+.status-badge {
+  display: inline-block;
+
+  padding: 6px 10px;
+
+  border-radius: 20px;
+
+  font-size: 11px;
+
+  font-weight: 700;
+}
+
+
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+
+.status-paid {
+  background: #d1e7dd;
+  color: #0f5132;
+}
+
+
+.status-approved {
+  background: #cff4fc;
+  color: #055160;
+}
+
+
+.status-allocated {
+  background: #d1e7dd;
+  color: #0f5132;
+}
+
+
+.status-cancelled {
+  background: #f8d7da;
+  color: #842029;
+}
+
+
+/* ======================================================
+   ACTION BUTTONS
+====================================================== */
+
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+
+.action-buttons .btn {
+  font-size: 12px;
+}
+
+
+/* ======================================================
+   ALLOCATION PARTICIPANT
+====================================================== */
+
+.allocation-participant {
+  background: #f8f9fa;
+
+  border-radius: 10px;
+
+  padding: 15px;
+
+  border-left: 4px solid #0d6efd;
+}
+
+
+/* ======================================================
+   MODAL
+====================================================== */
+
+.modal-content {
+  border: none;
+  border-radius: 14px;
+
+  box-shadow:
+    0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+
+/* ======================================================
+   FORM
+====================================================== */
+
+.form-control,
+.form-select {
+  min-height: 44px;
+  border-radius: 8px;
+}
+
+
+.form-control:focus,
+.form-select:focus {
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
+}
+
+
+/* ======================================================
+   LOADING OVERLAY
+====================================================== */
+
+.loading-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  background: rgba(255, 255, 255, 0.75);
+
+  z-index: 9999;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+}
+
+
+.loading-box {
+  background: #ffffff;
+
+  padding: 30px 45px;
+
+  border-radius: 14px;
+
+  text-align: center;
+
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+
+/* ======================================================
+   RESPONSIVE
+====================================================== */
+
+@media (max-width: 768px) {
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .summary-card {
+    padding: 15px;
+  }
+
+  .table {
+    min-width: 1000px;
+  }
+
+}
+/* ==========================================================
+   THEME TRANSITION
+   ========================================================== */
+
+body,
+.card,
+.card-header,
+.table,
+.form-control,
+.form-select,
+.modal-content,
+.modal-header,
+.modal-footer,
+.summary-card,
+.page-header,
+.navbar,
+.alert {
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease;
+}
+
+
+/* ==========================================================
+   DARK MODE
+   ========================================================== */
+
+body.dark-mode {
+
+  background-color: #12161c;
+
+  color: #e8eaed;
+
+}
+
+
+/* ==========================================================
+   DARK MODE - TEXT
+   ========================================================== */
+
+body.dark-mode
+.text-muted {
+
+  color: #aeb6c2 !important;
+
+}
+
+
+/* ==========================================================
+   DARK MODE - CARDS
+   ========================================================== */
+
+body.dark-mode
+.card {
+
+  background-color: #1c222b;
+
+  color: #e8eaed;
+
+  border-color: #343b46;
+
+}
+
+
+body.dark-mode
+.card-header {
+
+  background-color: #1c222b !important;
+
+  color: #e8eaed;
+
+  border-color: #343b46;
+
+}
+
+
+/* ==========================================================
+   DARK MODE - SUMMARY CARDS
+   ========================================================== */
+
+body.dark-mode
+.summary-card {
+
+  background-color: #1c222b;
+
+  color: #e8eaed;
+
+  border-color: #343b46;
+
+}
+
+
+/* ==========================================================
+   DARK MODE - TABLE
+   ========================================================== */
+
+body.dark-mode
+.table {
+
+  color: #e8eaed;
+
+  --bs-table-bg: #1c222b;
+
+  --bs-table-color: #e8eaed;
+
+}
+
+
+body.dark-mode
+.table-light {
+
+  --bs-table-bg: #252c36;
+
+  --bs-table-color: #ffffff;
+
+}
+
+
+body.dark-mode
+.table-hover > tbody > tr:hover {
+
+  --bs-table-hover-bg: #272f3a;
+
+  --bs-table-hover-color: #ffffff;
+
+}
+
+
+/* ==========================================================
+   DARK MODE - FORM INPUTS
+   ========================================================== */
+
+body.dark-mode
+.form-control,
+body.dark-mode
+.form-select {
+
+  background-color: #252c36;
+
+  color: #ffffff;
+
+  border-color: #454e5a;
+
+}
+
+
+body.dark-mode
+.form-control::placeholder {
+
+  color: #8993a1;
+
+}
+
+
+body.dark-mode
+.form-control:focus,
+body.dark-mode
+.form-select:focus {
+
+  background-color: #252c36;
+
+  color: #ffffff;
+
+  border-color: #0d6efd;
+
+}
+
+
+/* ==========================================================
+   DARK MODE - SELECT OPTIONS
+   ========================================================== */
+
+body.dark-mode
+.form-select option {
+
+  background-color: #252c36;
+
+  color: #ffffff;
+
+}
+
+
+/* ==========================================================
+   DARK MODE - MODALS
+   ========================================================== */
+
+body.dark-mode
+.modal-content {
+
+  background-color: #1c222b;
+
+  color: #e8eaed;
+
+  border-color: #343b46;
+
+}
+
+
+body.dark-mode
+.modal-header,
+body.dark-mode
+.modal-footer {
+
+  border-color: #343b46;
+
+}
+
+
+/* ==========================================================
+   DARK MODE - CLOSE BUTTON
+   ========================================================== */
+
+body.dark-mode
+.btn-close {
+
+  filter: invert(1)
+          grayscale(100%)
+          brightness(200%);
+
+}
+
+
+/* ==========================================================
+   DARK MODE - HORIZONTAL RULE
+   ========================================================== */
+
+body.dark-mode
+hr {
+
+  border-color: #454e5a;
+
+  opacity: 1;
+
+}
+
+
+/* ==========================================================
+   DARK MODE - SEARCH AREA
+   ========================================================== */
+
+body.dark-mode
+.page-header {
+
+  color: #ffffff;
+
+}
+
+
+/* ==========================================================
+   DARK MODE - ALLOCATION PARTICIPANT
+   ========================================================== */
+
+body.dark-mode
+.allocation-participant {
+
+  background-color: #252c36;
+
+  border-color: #454e5a;
+
+  color: #ffffff;
+
+}
+
+
+/* ==========================================================
+   THEME TOGGLE BUTTON
+   ========================================================== */
+
+.theme-toggle {
+
+  min-width: 120px;
+
+  font-weight: 600;
+
+  border-radius: 20px;
+
+  transition:
+    all 0.2s ease;
+
+}
+
+
+.theme-toggle:hover {
+
+  transform: translateY(-1px);
+
+}
