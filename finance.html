@@ -74,12 +74,113 @@
       </p>
     </div>
 
+    <div class="d-flex flex-wrap gap-2">
+
+  <!-- REFRESH -->
+  <button
+    class="btn btn-outline-primary"
+    onclick="loadReservations()"
+  >
+    🔄 Refresh
+  </button>
+
+
+  <!-- EXPORT -->
+  <div class="dropdown">
+
     <button
-      class="btn btn-outline-primary"
-      onclick="loadReservations()"
+      class="btn btn-success dropdown-toggle"
+      type="button"
+      data-bs-toggle="dropdown"
+      aria-expanded="false"
     >
-      🔄 Refresh
+      📊 Export
     </button>
+
+
+    <ul class="dropdown-menu dropdown-menu-end">
+
+      <li>
+
+        <button
+          class="dropdown-item"
+          onclick="exportCurrentResults()"
+        >
+          📋 Current Results
+        </button>
+
+      </li>
+
+
+      <li>
+
+        <button
+          class="dropdown-item"
+          onclick="exportAllReservations()"
+        >
+          📊 All Reservations
+        </button>
+
+      </li>
+
+
+      <li>
+        <hr class="dropdown-divider">
+      </li>
+
+
+      <li>
+
+        <button
+          class="dropdown-item"
+          onclick="exportByStatus('Paid')"
+        >
+          💰 Paid Reservations
+        </button>
+
+      </li>
+
+
+      <li>
+
+        <button
+          class="dropdown-item"
+          onclick="exportByStatus('Approved')"
+        >
+          ✓ Approved Reservations
+        </button>
+
+      </li>
+
+
+      <li>
+
+        <button
+          class="dropdown-item"
+          onclick="exportByStatus('Allocated')"
+        >
+          🏨 Allocated Reservations
+        </button>
+
+      </li>
+
+
+      <li>
+
+        <button
+          class="dropdown-item"
+          onclick="exportUnallocated()"
+        >
+          ⏳ Unallocated Reservations
+        </button>
+
+      </li>
+
+    </ul>
+
+  </div>
+
+</div>
 
   </div>
 

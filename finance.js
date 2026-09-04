@@ -1,8 +1,9 @@
 // ==========================================================
 // SNMM 2026
 // FINANCE & ROOM ALLOCATION
-// APP.JS
+// FINANCE.JS
 // ==========================================================
+
 
 
 // ==========================================================
@@ -13,6 +14,7 @@ const API_URL =
   "https://script.google.com/macros/s/AKfycbx7Z-L7l4hTPvZu3fHDbFT-v3lSc6p0VEQNamyGeicHVo-a4apXDt7EQtwqKzoHPX0ibw/exec";
 
 
+
 // ==========================================================
 // GLOBAL DATA
 // ==========================================================
@@ -20,6 +22,7 @@ const API_URL =
 let allReservations = [];
 
 let currentReservation = null;
+
 
 
 // ==========================================================
@@ -34,6 +37,7 @@ document.addEventListener(
 
   }
 );
+
 
 
 // ==========================================================
@@ -94,6 +98,7 @@ async function loadReservations() {
 }
 
 
+
 // ==========================================================
 // UPDATE SUMMARY CARDS
 // ==========================================================
@@ -137,6 +142,7 @@ function updateSummary() {
     ).length;
 
 
+
   setText(
     "totalReservations",
     total
@@ -160,6 +166,7 @@ function updateSummary() {
 }
 
 
+
 // ==========================================================
 // FILTER RESERVATIONS
 // ==========================================================
@@ -176,10 +183,12 @@ function filterReservations() {
       .toLowerCase();
 
 
+
   const status =
     document.getElementById(
       "statusFilter"
     )?.value || "All";
+
 
 
   const filtered =
@@ -207,11 +216,13 @@ function filterReservations() {
           ).trim();
 
 
+
         const matchesSearch =
           !search ||
           reservationId.includes(search) ||
           registrationCode.includes(search) ||
           participantName.includes(search);
+
 
 
         const matchesStatus =
@@ -231,6 +242,7 @@ function filterReservations() {
           );
 
 
+
         return (
           matchesSearch &&
           matchesStatus
@@ -240,11 +252,100 @@ function filterReservations() {
     );
 
 
+
   renderReservations(
     filtered
   );
 
 }
+
+
+
+// ==========================================================
+// GET CURRENT FILTERED RESERVATIONS
+// ==========================================================
+
+function getFilteredReservations() {
+
+  const search =
+    String(
+      document.getElementById(
+        "searchInput"
+      )?.value || ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+
+  const status =
+    document.getElementById(
+      "statusFilter"
+    )?.value || "All";
+
+
+
+  return allReservations.filter(
+    function (reservation) {
+
+      const reservationId =
+        String(
+          reservation.reservationId || ""
+        ).toLowerCase();
+
+      const registrationCode =
+        String(
+          reservation.registrationCode || ""
+        ).toLowerCase();
+
+      const participantName =
+        String(
+          reservation.participantName || ""
+        ).toLowerCase();
+
+      const reservationStatus =
+        String(
+          reservation.status || ""
+        ).trim();
+
+
+
+      const matchesSearch =
+        !search ||
+        reservationId.includes(search) ||
+        registrationCode.includes(search) ||
+        participantName.includes(search);
+
+
+
+      const matchesStatus =
+        status === "All" ||
+        reservationStatus === status ||
+        (
+          status === "Paid" &&
+          String(
+            reservation.paymentStatus || ""
+          ).trim() === "Paid"
+        ) ||
+        (
+          status === "Approved" &&
+          String(
+            reservation.approvalStatus || ""
+          ).trim() === "Approved"
+        );
+
+
+
+      return (
+        matchesSearch &&
+        matchesStatus
+      );
+
+    }
+  );
+
+}
+
 
 
 // ==========================================================
@@ -261,12 +362,15 @@ function renderReservations(
     );
 
 
+
   if (!table) {
     return;
   }
 
 
+
   table.innerHTML = "";
+
 
 
   if (!reservations.length) {
@@ -293,6 +397,7 @@ function renderReservations(
   }
 
 
+
   reservations.forEach(
     function (reservation) {
 
@@ -300,6 +405,7 @@ function renderReservations(
         document.createElement(
           "tr"
         );
+
 
 
       row.innerHTML = `
@@ -325,6 +431,7 @@ function renderReservations(
         </td>
 
 
+
         <td>
 
           <strong>
@@ -346,6 +453,7 @@ function renderReservations(
         </td>
 
 
+
         <td>
 
           ${escapeHtml(
@@ -353,6 +461,7 @@ function renderReservations(
           )}
 
         </td>
+
 
 
         <td>
@@ -383,6 +492,7 @@ function renderReservations(
         </td>
 
 
+
         <td>
 
           ${paymentBadge(
@@ -390,6 +500,7 @@ function renderReservations(
           )}
 
         </td>
+
 
 
         <td>
@@ -401,6 +512,7 @@ function renderReservations(
         </td>
 
 
+
         <td>
 
           ${allocationBadge(
@@ -408,6 +520,7 @@ function renderReservations(
           )}
 
         </td>
+
 
 
         <td>
@@ -438,6 +551,7 @@ function renderReservations(
       `;
 
 
+
       table.appendChild(
         row
       );
@@ -446,6 +560,7 @@ function renderReservations(
   );
 
 }
+
 
 
 // ==========================================================
@@ -462,16 +577,19 @@ function buildActionButton(
     ).trim();
 
 
+
   const paymentStatus =
     String(
       reservation.paymentStatus || ""
     ).trim();
 
 
+
   const approvalStatus =
     String(
       reservation.approvalStatus || ""
     ).trim();
+
 
 
   // --------------------------------------------------------
@@ -495,6 +613,7 @@ function buildActionButton(
   }
 
 
+
   // --------------------------------------------------------
   // ALREADY ALLOCATED
   // --------------------------------------------------------
@@ -516,54 +635,53 @@ function buildActionButton(
   }
 
 
+
   // --------------------------------------------------------
   // PAYMENT NOT CONFIRMED
   // --------------------------------------------------------
 
-// --------------------------------------------------------
-// PAYMENT NOT CONFIRMED
-// --------------------------------------------------------
+  if (
+    paymentStatus !== "Paid"
+  ) {
 
-if (
-  paymentStatus !== "Paid"
-) {
+    return `
 
-  return `
+      <div class="d-flex flex-wrap gap-1">
 
-    <div class="d-flex flex-wrap gap-1">
+        <button
+          class="btn btn-sm btn-success"
+          onclick="openPaymentModal(
+            '${escapeJs(
+              reservation.reservationId
+            )}'
+          )"
+        >
 
-      <button
-        class="btn btn-sm btn-success"
-        onclick="openPaymentModal(
-          '${escapeJs(
-            reservation.reservationId
-          )}'
-        )"
-      >
+          💰 Confirm Payment
 
-        💰 Confirm Payment
-
-      </button>
+        </button>
 
 
-      <button
-        class="btn btn-sm btn-outline-danger"
-        onclick="releaseReservation(
-          '${escapeJs(
-            reservation.reservationId
-          )}'
-        )"
-      >
 
-        ✕ Payment Not Done
+        <button
+          class="btn btn-sm btn-outline-danger"
+          onclick="releaseReservation(
+            '${escapeJs(
+              reservation.reservationId
+            )}'
+          )"
+        >
 
-      </button>
+          ✕ Payment Not Done
 
-    </div>
+        </button>
 
-  `;
+      </div>
 
-}
+    `;
+
+  }
+
 
 
   // --------------------------------------------------------
@@ -594,6 +712,7 @@ if (
   }
 
 
+
   // --------------------------------------------------------
   // PAYMENT + APPROVAL COMPLETE
   // --------------------------------------------------------
@@ -618,6 +737,7 @@ if (
 }
 
 
+
 // ==========================================================
 // PAYMENT BADGE
 // ==========================================================
@@ -630,6 +750,7 @@ function paymentBadge(
     String(
       status || "Pending"
     ).trim();
+
 
 
   if (
@@ -647,6 +768,7 @@ function paymentBadge(
   }
 
 
+
   return `
 
     <span class="badge bg-warning text-dark">
@@ -656,6 +778,7 @@ function paymentBadge(
   `;
 
 }
+
 
 
 // ==========================================================
@@ -670,6 +793,7 @@ function approvalBadge(
     String(
       status || "Pending"
     ).trim();
+
 
 
   if (
@@ -687,6 +811,7 @@ function approvalBadge(
   }
 
 
+
   return `
 
     <span class="badge bg-warning text-dark">
@@ -696,6 +821,7 @@ function approvalBadge(
   `;
 
 }
+
 
 
 // ==========================================================
@@ -720,6 +846,7 @@ function allocationBadge(
 
     const bed =
       reservation.bedNumber || "";
+
 
 
     return `
@@ -751,6 +878,7 @@ function allocationBadge(
   }
 
 
+
   return `
 
     <span class="badge bg-secondary">
@@ -762,6 +890,7 @@ function allocationBadge(
   `;
 
 }
+
 
 
 // ==========================================================
@@ -778,6 +907,7 @@ function openPaymentModal(
     );
 
 
+
   if (!reservation) {
 
     showMessage(
@@ -790,8 +920,10 @@ function openPaymentModal(
   }
 
 
+
   currentReservation =
     reservation;
+
 
 
   const idField =
@@ -800,10 +932,12 @@ function openPaymentModal(
     );
 
 
+
   const referenceField =
     document.getElementById(
       "paymentReference"
     );
+
 
 
   if (idField) {
@@ -814,6 +948,7 @@ function openPaymentModal(
   }
 
 
+
   if (referenceField) {
 
     referenceField.value = "";
@@ -821,10 +956,12 @@ function openPaymentModal(
   }
 
 
+
   const modalElement =
     document.getElementById(
       "paymentModal"
     );
+
 
 
   if (
@@ -843,6 +980,7 @@ function openPaymentModal(
 }
 
 
+
 // ==========================================================
 // CONFIRM PAYMENT
 // ==========================================================
@@ -855,10 +993,12 @@ async function confirmPayment() {
     )?.value.trim();
 
 
+
   const paymentReference =
     document.getElementById(
       "paymentReference"
     )?.value.trim();
+
 
 
   if (!reservationId) {
@@ -873,6 +1013,7 @@ async function confirmPayment() {
   }
 
 
+
   if (!paymentReference) {
 
     showMessage(
@@ -885,7 +1026,9 @@ async function confirmPayment() {
   }
 
 
+
   showLoading(true);
+
 
 
   try {
@@ -903,12 +1046,15 @@ async function confirmPayment() {
       );
 
 
+
     const response =
       await fetch(url);
 
 
+
     const result =
       await response.json();
+
 
 
     if (!result.success) {
@@ -924,15 +1070,18 @@ async function confirmPayment() {
     }
 
 
+
     closeModal(
       "paymentModal"
     );
+
 
 
     showMessage(
       "Payment confirmed successfully. The reservation is now ready for approval.",
       "success"
     );
+
 
 
     await loadReservations();
@@ -956,6 +1105,8 @@ async function confirmPayment() {
 
 }
 
+
+
 // ==========================================================
 // RELEASE RESERVATION — PAYMENT NOT DONE
 // ==========================================================
@@ -970,6 +1121,7 @@ async function releaseReservation(
     );
 
 
+
   if (!reservation) {
 
     showMessage(
@@ -982,10 +1134,12 @@ async function releaseReservation(
   }
 
 
+
   const paymentStatus =
     String(
       reservation.paymentStatus || ""
     ).trim();
+
 
 
   if (
@@ -1002,9 +1156,11 @@ async function releaseReservation(
   }
 
 
+
   const participantName =
     reservation.participantName ||
     "this participant";
+
 
 
   const confirmed =
@@ -1016,6 +1172,7 @@ async function releaseReservation(
     );
 
 
+
   if (!confirmed) {
 
     return;
@@ -1023,7 +1180,9 @@ async function releaseReservation(
   }
 
 
+
   showLoading(true);
+
 
 
   try {
@@ -1037,12 +1196,15 @@ async function releaseReservation(
       );
 
 
+
     const response =
       await fetch(url);
 
 
+
     const result =
       await response.json();
+
 
 
     if (!result.success) {
@@ -1058,10 +1220,12 @@ async function releaseReservation(
     }
 
 
+
     showMessage(
       "Reservation released successfully. The bed has been returned to the available room pool.",
       "success"
     );
+
 
 
     await loadReservations();
@@ -1073,6 +1237,7 @@ async function releaseReservation(
       "Release reservation error:",
       error
     );
+
 
 
     showMessage(
@@ -1089,6 +1254,8 @@ async function releaseReservation(
 
 }
 
+
+
 // ==========================================================
 // APPROVE RESERVATION
 // ==========================================================
@@ -1103,6 +1270,7 @@ async function approveReservation(
     );
 
 
+
   if (!reservation) {
 
     showMessage(
@@ -1113,6 +1281,7 @@ async function approveReservation(
     return;
 
   }
+
 
 
   if (
@@ -1131,10 +1300,12 @@ async function approveReservation(
   }
 
 
+
   const confirmed =
     confirm(
       "Confirm approval of this accommodation reservation?"
     );
+
 
 
   if (!confirmed) {
@@ -1144,7 +1315,9 @@ async function approveReservation(
   }
 
 
+
   showLoading(true);
+
 
 
   try {
@@ -1158,12 +1331,15 @@ async function approveReservation(
       );
 
 
+
     const response =
       await fetch(url);
 
 
+
     const result =
       await response.json();
+
 
 
     if (!result.success) {
@@ -1179,10 +1355,12 @@ async function approveReservation(
     }
 
 
+
     showMessage(
       "Reservation approved successfully. You can now allocate the room.",
       "success"
     );
+
 
 
     await loadReservations();
@@ -1207,6 +1385,7 @@ async function approveReservation(
 }
 
 
+
 // ==========================================================
 // OPEN ALLOCATION MODAL
 // ==========================================================
@@ -1221,6 +1400,7 @@ function openAllocationModal(
     );
 
 
+
   if (!reservation) {
 
     showMessage(
@@ -1231,6 +1411,7 @@ function openAllocationModal(
     return;
 
   }
+
 
 
   if (
@@ -1249,6 +1430,7 @@ function openAllocationModal(
   }
 
 
+
   if (
     String(
       reservation.approvalStatus || ""
@@ -1265,8 +1447,10 @@ function openAllocationModal(
   }
 
 
+
   currentReservation =
     reservation;
+
 
 
   setValue(
@@ -1275,10 +1459,12 @@ function openAllocationModal(
   );
 
 
+
   setValue(
     "blockName",
     ""
   );
+
 
 
   setValue(
@@ -1287,16 +1473,19 @@ function openAllocationModal(
   );
 
 
+
   setValue(
     "bedNumber",
     ""
   );
 
 
+
   const participant =
     document.getElementById(
       "allocationParticipant"
     );
+
 
 
   if (participant) {
@@ -1318,6 +1507,7 @@ function openAllocationModal(
           </div>
 
 
+
           <div class="col-md-6">
 
             <strong>Registration:</strong><br>
@@ -1329,6 +1519,7 @@ function openAllocationModal(
           </div>
 
 
+
           <div class="col-md-6">
 
             <strong>Room Type:</strong><br>
@@ -1338,6 +1529,7 @@ function openAllocationModal(
             )}
 
           </div>
+
 
 
           <div class="col-md-6">
@@ -1359,10 +1551,12 @@ function openAllocationModal(
   }
 
 
+
   const message =
     document.getElementById(
       "allocationMessage"
     );
+
 
 
   if (message) {
@@ -1372,10 +1566,12 @@ function openAllocationModal(
   }
 
 
+
   const modalElement =
     document.getElementById(
       "allocationModal"
     );
+
 
 
   if (
@@ -1394,6 +1590,7 @@ function openAllocationModal(
 }
 
 
+
 // ==========================================================
 // SUBMIT ROOM ALLOCATION
 // ==========================================================
@@ -1406,10 +1603,12 @@ async function submitAllocation() {
     )?.value.trim();
 
 
+
   const blockName =
     document.getElementById(
       "blockName"
     )?.value.trim();
+
 
 
   const roomNumber =
@@ -1418,10 +1617,12 @@ async function submitAllocation() {
     )?.value.trim();
 
 
+
   const bedNumber =
     document.getElementById(
       "bedNumber"
     )?.value.trim();
+
 
 
   if (!reservationId) {
@@ -1436,6 +1637,7 @@ async function submitAllocation() {
   }
 
 
+
   if (!blockName) {
 
     showAllocationMessage(
@@ -1446,6 +1648,7 @@ async function submitAllocation() {
     return;
 
   }
+
 
 
   if (!roomNumber) {
@@ -1460,6 +1663,7 @@ async function submitAllocation() {
   }
 
 
+
   if (!bedNumber) {
 
     showAllocationMessage(
@@ -1472,10 +1676,12 @@ async function submitAllocation() {
   }
 
 
+
   const confirmed =
     confirm(
       "Confirm this room allocation?"
     );
+
 
 
   if (!confirmed) {
@@ -1485,7 +1691,9 @@ async function submitAllocation() {
   }
 
 
+
   showLoading(true);
+
 
 
   try {
@@ -1511,12 +1719,15 @@ async function submitAllocation() {
       );
 
 
+
     const response =
       await fetch(url);
 
 
+
     const result =
       await response.json();
+
 
 
     if (!result.success) {
@@ -1532,15 +1743,18 @@ async function submitAllocation() {
     }
 
 
+
     closeModal(
       "allocationModal"
     );
+
 
 
     showMessage(
       "Room allocated successfully.",
       "success"
     );
+
 
 
     await loadReservations();
@@ -1565,6 +1779,7 @@ async function submitAllocation() {
 }
 
 
+
 // ==========================================================
 // VIEW RESERVATION
 // ==========================================================
@@ -1579,6 +1794,7 @@ function viewReservation(
     );
 
 
+
   if (!reservation) {
 
     showMessage(
@@ -1591,8 +1807,10 @@ function viewReservation(
   }
 
 
+
   currentReservation =
     reservation;
+
 
 
   const container =
@@ -1601,9 +1819,11 @@ function viewReservation(
     );
 
 
+
   if (!container) {
     return;
   }
+
 
 
   container.innerHTML = `
@@ -1625,6 +1845,7 @@ function viewReservation(
       </div>
 
 
+
       <div class="col-md-6">
 
         <strong>
@@ -1638,6 +1859,7 @@ function viewReservation(
         </div>
 
       </div>
+
 
 
       <div class="col-md-6">
@@ -1655,6 +1877,7 @@ function viewReservation(
       </div>
 
 
+
       <div class="col-md-6">
 
         <strong>
@@ -1670,6 +1893,7 @@ function viewReservation(
       </div>
 
 
+
       <div class="col-md-6">
 
         <strong>
@@ -1683,6 +1907,7 @@ function viewReservation(
         </div>
 
       </div>
+
 
 
       <div class="col-md-6">
@@ -1707,6 +1932,7 @@ function viewReservation(
       </div>
 
 
+
       <div class="col-md-4">
 
         <strong>
@@ -1722,6 +1948,7 @@ function viewReservation(
         </div>
 
       </div>
+
 
 
       <div class="col-md-4">
@@ -1741,6 +1968,7 @@ function viewReservation(
       </div>
 
 
+
       <div class="col-md-4">
 
         <strong>
@@ -1756,6 +1984,7 @@ function viewReservation(
         </div>
 
       </div>
+
 
 
       <div class="col-12">
@@ -1822,10 +2051,12 @@ function viewReservation(
   `;
 
 
+
   const modalElement =
     document.getElementById(
       "reservationModal"
     );
+
 
 
   if (
@@ -1844,6 +2075,7 @@ function viewReservation(
 }
 
 
+
 // ==========================================================
 // STATUS BADGE
 // ==========================================================
@@ -1858,8 +2090,10 @@ function statusBadge(
     ).trim();
 
 
+
   let className =
     "bg-secondary";
+
 
 
   if (
@@ -1872,6 +2106,7 @@ function statusBadge(
   }
 
 
+
   if (
     status === "Allocated"
   ) {
@@ -1882,6 +2117,7 @@ function statusBadge(
   }
 
 
+
   if (
     status === "Cancelled"
   ) {
@@ -1890,6 +2126,7 @@ function statusBadge(
       "bg-danger";
 
   }
+
 
 
   return `
@@ -1903,6 +2140,7 @@ function statusBadge(
   `;
 
 }
+
 
 
 // ==========================================================
@@ -1929,6 +2167,554 @@ function findReservation(
 }
 
 
+
+// ==========================================================
+// ==========================================================
+// EXPORT SYSTEM
+// ==========================================================
+// ==========================================================
+
+
+
+// ==========================================================
+// EXPORT CURRENT FILTERED RESULTS
+// ==========================================================
+
+function exportCurrentResults() {
+
+  const reservations =
+    getFilteredReservations();
+
+
+
+  if (!reservations.length) {
+
+    showMessage(
+      "There are no reservations in the current filter to export.",
+      "warning"
+    );
+
+    return;
+
+  }
+
+
+
+  exportReservationsToCSV(
+    reservations,
+    "Current_Results"
+  );
+
+}
+
+
+
+// ==========================================================
+// EXPORT ALL RESERVATIONS
+// ==========================================================
+
+function exportAllReservations() {
+
+  if (!allReservations.length) {
+
+    showMessage(
+      "There are no reservations available to export.",
+      "warning"
+    );
+
+    return;
+
+  }
+
+
+
+  exportReservationsToCSV(
+    allReservations,
+    "All_Reservations"
+  );
+
+}
+
+
+
+// ==========================================================
+// EXPORT BY STATUS
+// ==========================================================
+
+function exportByStatus(
+  status
+) {
+
+  let reservations = [];
+
+
+
+  if (
+    status === "Paid"
+  ) {
+
+    reservations =
+      allReservations.filter(
+        function (reservation) {
+
+          return String(
+            reservation.paymentStatus || ""
+          ).trim() === "Paid";
+
+        }
+      );
+
+  }
+  else if (
+    status === "Approved"
+  ) {
+
+    reservations =
+      allReservations.filter(
+        function (reservation) {
+
+          return String(
+            reservation.approvalStatus || ""
+          ).trim() === "Approved";
+
+        }
+      );
+
+  }
+  else {
+
+    reservations =
+      allReservations.filter(
+        function (reservation) {
+
+          return String(
+            reservation.status || ""
+          ).trim() === status;
+
+        }
+      );
+
+  }
+
+
+
+  if (!reservations.length) {
+
+    showMessage(
+      "No " +
+      status.toLowerCase() +
+      " reservations found.",
+      "warning"
+    );
+
+    return;
+
+  }
+
+
+
+  exportReservationsToCSV(
+    reservations,
+    status
+  );
+
+}
+
+
+
+// ==========================================================
+// EXPORT UNALLOCATED
+// ==========================================================
+
+function exportUnallocated() {
+
+  const reservations =
+    allReservations.filter(
+      function (reservation) {
+
+        return String(
+          reservation.status || ""
+        ).trim() !== "Allocated" &&
+        String(
+          reservation.status || ""
+        ).trim() !== "Cancelled";
+
+      }
+    );
+
+
+
+  if (!reservations.length) {
+
+    showMessage(
+      "No unallocated reservations found.",
+      "warning"
+    );
+
+    return;
+
+  }
+
+
+
+  exportReservationsToCSV(
+    reservations,
+    "Unallocated"
+  );
+
+}
+
+
+
+// ==========================================================
+// MAIN CSV EXPORT
+// ==========================================================
+
+function exportReservationsToCSV(
+  reservations,
+  reportName
+) {
+
+  if (
+    !Array.isArray(
+      reservations
+    ) ||
+    !reservations.length
+  ) {
+
+    return;
+
+  }
+
+
+
+  const headers = [
+
+    "Reservation ID",
+
+    "Registration Code",
+
+    "Participant Name",
+
+    "Staff ID",
+
+    "Room Type",
+
+    "Rate",
+
+    "Rate Type",
+
+    "Payment Status",
+
+    "Payment Reference",
+
+    "Approval Status",
+
+    "Reservation Status",
+
+    "Block",
+
+    "Room Number",
+
+    "Bed Number",
+
+    "Allocated At",
+
+    "Allocated By"
+
+  ];
+
+
+
+  const rows =
+    reservations.map(
+      function (reservation) {
+
+        return [
+
+          reservation.reservationId || "",
+
+          reservation.registrationCode || "",
+
+          reservation.participantName || "",
+
+          reservation.staffId || "",
+
+          reservation.roomType || "",
+
+          formatAmount(
+            reservation.rate
+          ),
+
+          reservation.rateType || "",
+
+          reservation.paymentStatus || "Pending",
+
+          reservation.paymentReference || "",
+
+          reservation.approvalStatus || "Pending",
+
+          reservation.status || "Reserved",
+
+          reservation.blockName || "",
+
+          reservation.roomNumber || "",
+
+          reservation.bedNumber || "",
+
+          reservation.allocatedAt || "",
+
+          reservation.allocatedBy || ""
+
+        ];
+
+      }
+    );
+
+
+
+  const csv =
+    createCSV(
+      headers,
+      rows
+    );
+
+
+
+  downloadCSV(
+    csv,
+    reportName
+  );
+
+}
+
+
+
+// ==========================================================
+// CREATE CSV
+// ==========================================================
+
+function createCSV(
+  headers,
+  rows
+) {
+
+  const allRows = [
+    headers,
+    ...rows
+  ];
+
+
+
+  return allRows
+    .map(
+      function (row) {
+
+        return row
+          .map(
+            function (value) {
+
+              return csvEscape(
+                value
+              );
+
+            }
+          )
+          .join(",");
+
+      }
+    )
+    .join("\r\n");
+
+}
+
+
+
+// ==========================================================
+// CSV ESCAPE
+// ==========================================================
+
+function csvEscape(
+  value
+) {
+
+  if (
+    value === null ||
+    value === undefined
+  ) {
+
+    return '""';
+
+  }
+
+
+
+  let text =
+    String(value);
+
+
+
+  // Prevent Excel from interpreting
+  // values such as formulas.
+
+  if (
+    /^[=+\-@]/.test(text)
+  ) {
+
+    text =
+      "'" + text;
+
+  }
+
+
+
+  text =
+    text.replace(
+      /"/g,
+      '""'
+    );
+
+
+
+  return '"' +
+    text +
+    '"';
+
+}
+
+
+
+// ==========================================================
+// FORMAT AMOUNT
+// ==========================================================
+
+function formatAmount(
+  amount
+) {
+
+  const number =
+    Number(
+      amount || 0
+    );
+
+
+
+  if (
+    isNaN(number)
+  ) {
+
+    return amount || "";
+
+  }
+
+
+
+  return number.toFixed(2);
+
+}
+
+
+
+// ==========================================================
+// DOWNLOAD CSV
+// ==========================================================
+
+function downloadCSV(
+  csv,
+  reportName
+) {
+
+  // UTF-8 BOM helps Excel
+  // correctly recognize characters.
+
+  const BOM =
+    "\uFEFF";
+
+
+
+  const blob =
+    new Blob(
+      [
+        BOM +
+        csv
+      ],
+      {
+        type:
+          "text/csv;charset=utf-8;"
+      }
+    );
+
+
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+
+
+  const link =
+    document.createElement(
+      "a"
+    );
+
+
+
+  const date =
+    new Date()
+      .toISOString()
+      .slice(
+        0,
+        10
+      );
+
+
+
+  link.href =
+    url;
+
+
+
+  link.download =
+    "SNMM2026_" +
+    reportName +
+    "_" +
+    date +
+    ".csv";
+
+
+
+  document.body.appendChild(
+    link
+  );
+
+
+
+  link.click();
+
+
+
+  document.body.removeChild(
+    link
+  );
+
+
+
+  URL.revokeObjectURL(
+    url
+  );
+
+
+
+  showMessage(
+    "Export completed successfully.",
+    "success"
+  );
+
+}
+
+
+
 // ==========================================================
 // SHOW MESSAGE
 // ==========================================================
@@ -1944,9 +2730,11 @@ function showMessage(
     );
 
 
+
   if (!area) {
     return;
   }
+
 
 
   area.innerHTML = `
@@ -1972,6 +2760,7 @@ function showMessage(
 }
 
 
+
 // ==========================================================
 // ALLOCATION MESSAGE
 // ==========================================================
@@ -1987,9 +2776,11 @@ function showAllocationMessage(
     );
 
 
+
   if (!area) {
     return;
   }
+
 
 
   area.innerHTML = `
@@ -2003,6 +2794,7 @@ function showAllocationMessage(
   `;
 
 }
+
 
 
 // ==========================================================
@@ -2019,9 +2811,11 @@ function showLoading(
     );
 
 
+
   if (!overlay) {
     return;
   }
+
 
 
   overlay.classList.toggle(
@@ -2030,6 +2824,7 @@ function showLoading(
   );
 
 }
+
 
 
 // ==========================================================
@@ -2046,6 +2841,7 @@ function closeModal(
     );
 
 
+
   if (
     element &&
     typeof bootstrap !== "undefined"
@@ -2057,6 +2853,7 @@ function closeModal(
       );
 
 
+
     if (modal) {
 
       modal.hide();
@@ -2066,6 +2863,7 @@ function closeModal(
   }
 
 }
+
 
 
 // ==========================================================
@@ -2083,6 +2881,7 @@ function setText(
     );
 
 
+
   if (element) {
 
     element.textContent =
@@ -2091,6 +2890,7 @@ function setText(
   }
 
 }
+
 
 
 // ==========================================================
@@ -2108,6 +2908,7 @@ function setValue(
     );
 
 
+
   if (element) {
 
     element.value =
@@ -2116,6 +2917,7 @@ function setValue(
   }
 
 }
+
 
 
 // ==========================================================
@@ -2153,6 +2955,7 @@ function escapeHtml(
 }
 
 
+
 // ==========================================================
 // JAVASCRIPT ESCAPE
 // ==========================================================
@@ -2179,15 +2982,21 @@ function escapeJs(
 
 }
 
+
+
 // ==========================================================
 // DARK / LIGHT MODE
 // ==========================================================
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener(
+  "DOMContentLoaded",
+  function () {
 
-  initializeTheme();
+    initializeTheme();
 
-});
+  }
+);
+
 
 
 // ==========================================================
@@ -2197,22 +3006,35 @@ document.addEventListener("DOMContentLoaded", function () {
 function initializeTheme() {
 
   const savedTheme =
-    localStorage.getItem("snmm-theme");
+    localStorage.getItem(
+      "snmm-theme"
+    );
 
-  if (savedTheme === "dark") {
 
-    document.body.classList.add("dark-mode");
+
+  if (
+    savedTheme === "dark"
+  ) {
+
+    document.body.classList.add(
+      "dark-mode"
+    );
 
   }
   else {
 
-    document.body.classList.remove("dark-mode");
+    document.body.classList.remove(
+      "dark-mode"
+    );
 
   }
+
+
 
   updateThemeButton();
 
 }
+
 
 
 // ==========================================================
@@ -2221,19 +3043,32 @@ function initializeTheme() {
 
 function toggleTheme() {
 
-  document.body.classList.toggle("dark-mode");
+  document.body.classList.toggle(
+    "dark-mode"
+  );
+
+
 
   const isDark =
-    document.body.classList.contains("dark-mode");
+    document.body.classList.contains(
+      "dark-mode"
+    );
+
+
 
   localStorage.setItem(
     "snmm-theme",
-    isDark ? "dark" : "light"
+    isDark
+      ? "dark"
+      : "light"
   );
+
+
 
   updateThemeButton();
 
 }
+
 
 
 // ==========================================================
@@ -2243,24 +3078,39 @@ function toggleTheme() {
 function updateThemeButton() {
 
   const button =
-    document.getElementById("themeToggle");
+    document.getElementById(
+      "themeToggle"
+    );
+
+
 
   if (!button) {
     return;
   }
 
+
+
   const isDark =
-    document.body.classList.contains("dark-mode");
+    document.body.classList.contains(
+      "dark-mode"
+    );
 
 
-  if (isDark) {
+
+  if (
+    isDark
+  ) {
 
     button.innerHTML =
       "☀️";
 
+
+
     button.classList.remove(
       "btn-light"
     );
+
+
 
     button.classList.add(
       "btn-warning"
@@ -2272,9 +3122,13 @@ function updateThemeButton() {
     button.innerHTML =
       "🌙";
 
+
+
     button.classList.remove(
       "btn-warning"
     );
+
+
 
     button.classList.add(
       "btn-light"
