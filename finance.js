@@ -2,17 +2,24 @@
 // SNMM 2026
 // FINANCE & ROOM ALLOCATION
 // FINANCE.JS
+// STABLE VERSION
 // ==========================================================
 
 
-
 // ==========================================================
-// API CONFIGURATION
+// API
 // ==========================================================
 
 const API_URL =
   "https://script.google.com/macros/s/AKfycbx7Z-L7l4hTPvZu3fHDbFT-v3lSc6p0VEQNamyGeicHVo-a4apXDt7EQtwqKzoHPX0ibw/exec";
 
+
+// ==========================================================
+// CURRENT USER
+// ==========================================================
+
+const CURRENT_USER =
+  "Finance & Room Allocation";
 
 
 // ==========================================================
@@ -23,47 +30,133 @@ let allReservations = [];
 
 let currentReservation = null;
 
+let allocationMode = "new";
 
 
 // ==========================================================
-// PAGE INITIALIZATION
+// INITIALIZE
 // ==========================================================
 
 document.addEventListener(
   "DOMContentLoaded",
   function () {
 
-    loadReservations();
+    initializeTheme();
+
+    initializeListeners();
+
+    refreshAll();
 
   }
 );
 
+
+// ==========================================================
+// LISTENERS
+// ==========================================================
+
+function initializeListeners() {
+
+  const search =
+    document.getElementById(
+      "searchInput"
+    );
+
+
+  if (search) {
+
+    search.addEventListener(
+      "input",
+      filterReservations
+    );
+
+  }
+
+
+  const filter =
+    document.getElementById(
+      "statusFilter"
+    );
+
+
+  if (filter) {
+
+    filter.addEventListener(
+      "change",
+      filterReservations
+    );
+
+  }
+
+}
+
+
+// ==========================================================
+// REFRESH EVERYTHING
+// ==========================================================
+
+async function refreshAll(
+  showSpinner = true
+) {
+
+  if (showSpinner) {
+    showLoading(true);
+  }
+
+
+  try {
+
+    await Promise.all([
+      loadReservations(false),
+      loadDashboard(false)
+    ]);
+
+  } catch (error) {
+
+    console.error(error);
+
+    showMessage(
+      "Unable to refresh the system.",
+      "danger"
+    );
+
+  } finally {
+
+    if (showSpinner) {
+      showLoading(false);
+    }
+
+  }
+
+}
 
 
 // ==========================================================
 // LOAD RESERVATIONS
 // ==========================================================
 
-async function loadReservations() {
+async function loadReservations(
+  showSpinner = true
+) {
 
-  showLoading(true);
+  if (showSpinner) {
+    showLoading(true);
+  }
+
 
   try {
 
-    const response =
-      await fetch(
-        API_URL +
-        "?action=getReservations"
+    const result =
+      await apiGet(
+        "getReservations"
       );
 
-    const result =
-      await response.json();
 
     if (!result.success) {
 
       showMessage(
         result.message ||
-        "Unable to load reservations.",
+          "Unable to load reservations.",
         "danger"
       );
 
@@ -71,104 +164,139 @@ async function loadReservations() {
 
     }
 
-    allReservations =
-      result.reservations || [];
 
-    updateSummary();
+    allReservations =
+      result.reservations ||
+      result.data?.reservations ||
+      [];
+
 
     filterReservations();
 
-  }
-  catch (error) {
+
+  } catch (error) {
 
     console.error(error);
 
     showMessage(
-      "Unable to connect to the room reservation system.",
+      error.message ||
+        "Unable to load reservations.",
       "danger"
     );
 
-  }
-  finally {
+  } finally {
 
-    showLoading(false);
+    if (showSpinner) {
+      showLoading(false);
+    }
 
   }
 
 }
 
 
-
 // ==========================================================
-// UPDATE SUMMARY CARDS
+// LOAD DASHBOARD
 // ==========================================================
 
-function updateSummary() {
+async function loadDashboard(
+  showSpinner = false
+) {
 
-  const total =
-    allReservations.length;
-
-  const paid =
-    allReservations.filter(
-      function (reservation) {
-
-        return String(
-          reservation.paymentStatus || ""
-        ).trim() === "Paid";
-
-      }
-    ).length;
-
-  const approved =
-    allReservations.filter(
-      function (reservation) {
-
-        return String(
-          reservation.approvalStatus || ""
-        ).trim() === "Approved";
-
-      }
-    ).length;
-
-  const allocated =
-    allReservations.filter(
-      function (reservation) {
-
-        return String(
-          reservation.status || ""
-        ).trim() === "Allocated";
-
-      }
-    ).length;
+  if (showSpinner) {
+    showLoading(true);
+  }
 
 
+  try {
 
-  setText(
-    "totalReservations",
-    total
-  );
+    const result =
+      await apiGet(
+        "getDashboard"
+      );
 
-  setText(
-    "paidReservations",
-    paid
-  );
 
-  setText(
-    "approvedReservations",
-    approved
-  );
+    if (!result.success) {
 
-  setText(
-    "allocatedReservations",
-    allocated
-  );
+      showMessage(
+        result.message ||
+          "Unable to load dashboard.",
+        "danger"
+      );
+
+      return;
+
+    }
+
+
+    const summary =
+      result.summary ||
+      result.data?.summary ||
+      {};
+
+
+    setText(
+      "totalReservations",
+      Number(
+        summary.totalReservations ||
+        0
+      )
+    );
+
+
+    setText(
+      "paidReservations",
+      Number(
+        summary.paidReservations ??
+        summary.paid ??
+        0
+      )
+    );
+
+
+    setText(
+      "approvedReservations",
+      Number(
+        summary.approvedReservations ??
+        summary.approved ??
+        0
+      )
+    );
+
+
+    setText(
+      "allocatedReservations",
+      Number(
+        summary.allocatedReservations ??
+        summary.allocated ??
+        0
+      )
+    );
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    showMessage(
+      error.message ||
+        "Unable to load dashboard.",
+      "danger"
+    );
+
+  } finally {
+
+    if (showSpinner) {
+      showLoading(false);
+    }
+
+  }
 
 }
 
 
-
 // ==========================================================
-// FILTER RESERVATIONS
+// FILTER
 // ==========================================================
 
 function filterReservations() {
@@ -177,18 +305,22 @@ function filterReservations() {
     String(
       document.getElementById(
         "searchInput"
-      )?.value || ""
+      )?.value ||
+      ""
     )
       .trim()
       .toLowerCase();
 
 
-
   const status =
-    document.getElementById(
-      "statusFilter"
-    )?.value || "All";
-
+    String(
+      document.getElementById(
+        "statusFilter"
+      )?.value ||
+      "All"
+    )
+      .trim()
+      .toLowerCase();
 
 
   const filtered =
@@ -197,24 +329,53 @@ function filterReservations() {
 
         const reservationId =
           String(
-            reservation.reservationId || ""
-          ).toLowerCase();
+            reservation.reservationId ||
+            ""
+          )
+            .toLowerCase();
+
 
         const registrationCode =
           String(
-            reservation.registrationCode || ""
-          ).toLowerCase();
+            reservation.registrationCode ||
+            ""
+          )
+            .toLowerCase();
+
 
         const participantName =
           String(
-            reservation.participantName || ""
-          ).toLowerCase();
+            reservation.participantName ||
+            ""
+          )
+            .toLowerCase();
+
 
         const reservationStatus =
           String(
-            reservation.status || ""
-          ).trim();
+            reservation.status ||
+            ""
+          )
+            .trim()
+            .toLowerCase();
 
+
+        const paymentStatus =
+          String(
+            reservation.paymentStatus ||
+            ""
+          )
+            .trim()
+            .toLowerCase();
+
+
+        const approvalStatus =
+          String(
+            reservation.approvalStatus ||
+            ""
+          )
+            .trim()
+            .toLowerCase();
 
 
         const matchesSearch =
@@ -224,23 +385,11 @@ function filterReservations() {
           participantName.includes(search);
 
 
-
         const matchesStatus =
-          status === "All" ||
+          status === "all" ||
           reservationStatus === status ||
-          (
-            status === "Paid" &&
-            String(
-              reservation.paymentStatus || ""
-            ).trim() === "Paid"
-          ) ||
-          (
-            status === "Approved" &&
-            String(
-              reservation.approvalStatus || ""
-            ).trim() === "Approved"
-          );
-
+          paymentStatus === status ||
+          approvalStatus === status;
 
 
         return (
@@ -252,7 +401,6 @@ function filterReservations() {
     );
 
 
-
   renderReservations(
     filtered
   );
@@ -260,96 +408,8 @@ function filterReservations() {
 }
 
 
-
 // ==========================================================
-// GET CURRENT FILTERED RESERVATIONS
-// ==========================================================
-
-function getFilteredReservations() {
-
-  const search =
-    String(
-      document.getElementById(
-        "searchInput"
-      )?.value || ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-
-  const status =
-    document.getElementById(
-      "statusFilter"
-    )?.value || "All";
-
-
-
-  return allReservations.filter(
-    function (reservation) {
-
-      const reservationId =
-        String(
-          reservation.reservationId || ""
-        ).toLowerCase();
-
-      const registrationCode =
-        String(
-          reservation.registrationCode || ""
-        ).toLowerCase();
-
-      const participantName =
-        String(
-          reservation.participantName || ""
-        ).toLowerCase();
-
-      const reservationStatus =
-        String(
-          reservation.status || ""
-        ).trim();
-
-
-
-      const matchesSearch =
-        !search ||
-        reservationId.includes(search) ||
-        registrationCode.includes(search) ||
-        participantName.includes(search);
-
-
-
-      const matchesStatus =
-        status === "All" ||
-        reservationStatus === status ||
-        (
-          status === "Paid" &&
-          String(
-            reservation.paymentStatus || ""
-          ).trim() === "Paid"
-        ) ||
-        (
-          status === "Approved" &&
-          String(
-            reservation.approvalStatus || ""
-          ).trim() === "Approved"
-        );
-
-
-
-      return (
-        matchesSearch &&
-        matchesStatus
-      );
-
-    }
-  );
-
-}
-
-
-
-// ==========================================================
-// RENDER RESERVATIONS
+// RENDER TABLE
 // ==========================================================
 
 function renderReservations(
@@ -362,40 +422,33 @@ function renderReservations(
     );
 
 
-
   if (!table) {
     return;
   }
 
 
-
   table.innerHTML = "";
 
 
-
-  if (!reservations.length) {
+  if (
+    !reservations ||
+    !reservations.length
+  ) {
 
     table.innerHTML = `
-
       <tr>
-
         <td
           colspan="8"
           class="text-center py-5 text-muted"
         >
-
           No reservations found.
-
         </td>
-
       </tr>
-
     `;
 
     return;
 
   }
-
 
 
   reservations.forEach(
@@ -405,7 +458,6 @@ function renderReservations(
         document.createElement(
           "tr"
         );
-
 
 
       row.innerHTML = `
@@ -421,15 +473,12 @@ function renderReservations(
           <br>
 
           <small class="text-muted">
-
             ${escapeHtml(
               reservation.registrationCode
             )}
-
           </small>
 
         </td>
-
 
 
         <td>
@@ -443,89 +492,76 @@ function renderReservations(
           <br>
 
           <small class="text-muted">
-
             ${escapeHtml(
-              reservation.staffId || ""
+              reservation.staffId ||
+              ""
             )}
-
           </small>
 
         </td>
 
 
-
         <td>
-
           ${escapeHtml(
-            reservation.roomType || ""
+            reservation.roomType ||
+            ""
           )}
-
         </td>
-
 
 
         <td>
 
           <strong>
-
             GH₵ ${Number(
-              reservation.rate || 0
+              reservation.rate ||
+              0
             ).toLocaleString(
               "en-GH",
               {
-                minimumFractionDigits: 2
+                minimumFractionDigits:
+                  2
               }
             )}
-
           </strong>
 
           <br>
 
           <small class="text-muted">
-
             ${escapeHtml(
-              reservation.rateType || ""
+              reservation.rateType ||
+              ""
             )}
-
           </small>
 
         </td>
 
 
-
         <td>
-
           ${paymentBadge(
             reservation.paymentStatus
           )}
-
         </td>
 
 
-
         <td>
-
           ${approvalBadge(
             reservation.approvalStatus
           )}
-
         </td>
 
 
-
         <td>
-
           ${allocationBadge(
             reservation
           )}
-
         </td>
-
 
 
         <td>
 
-          <div class="d-flex flex-wrap gap-1">
+          <div
+            class="d-flex flex-wrap gap-1"
+          >
 
             ${buildActionButton(
               reservation
@@ -533,15 +569,11 @@ function renderReservations(
 
             <button
               class="btn btn-sm btn-outline-secondary"
-              onclick="viewReservation(
-                '${escapeJs(
-                  reservation.reservationId
-                )}'
-              )"
+              onclick="viewReservation('${escapeJs(
+                reservation.reservationId
+              )}')"
             >
-
               👁️ View
-
             </button>
 
           </div>
@@ -549,7 +581,6 @@ function renderReservations(
         </td>
 
       `;
-
 
 
       table.appendChild(
@@ -562,9 +593,8 @@ function renderReservations(
 }
 
 
-
 // ==========================================================
-// BUILD ACTION BUTTON
+// ACTION BUTTONS
 // ==========================================================
 
 function buildActionButton(
@@ -573,23 +603,29 @@ function buildActionButton(
 
   const status =
     String(
-      reservation.status || ""
-    ).trim();
-
+      reservation.status ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
 
 
   const paymentStatus =
     String(
-      reservation.paymentStatus || ""
-    ).trim();
-
+      reservation.paymentStatus ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
 
 
   const approvalStatus =
     String(
-      reservation.approvalStatus || ""
-    ).trim();
-
+      reservation.approvalStatus ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
 
 
   // --------------------------------------------------------
@@ -597,55 +633,55 @@ function buildActionButton(
   // --------------------------------------------------------
 
   if (
-    status === "Cancelled"
+    status === "cancelled"
   ) {
 
     return `
-
       <span class="badge bg-danger">
-
         Cancelled
-
       </span>
-
     `;
 
   }
 
 
-
   // --------------------------------------------------------
-  // ALREADY ALLOCATED
+  // ALLOCATED
+  //
+  // IMPORTANT FIX:
+  // SHOW EDIT BUTTON.
   // --------------------------------------------------------
 
   if (
-    status === "Allocated"
+    status === "allocated"
   ) {
 
     return `
-
-      <span class="badge bg-success">
-
-        ✓ Completed
-
-      </span>
-
+      <button
+        class="btn btn-sm btn-warning"
+        onclick="openAllocationModal(
+          '${escapeJs(
+            reservation.reservationId
+          )}',
+          'edit'
+        )"
+      >
+        ✏️ Edit Allocation
+      </button>
     `;
 
   }
 
 
-
   // --------------------------------------------------------
-  // PAYMENT NOT CONFIRMED
+  // PAYMENT NOT DONE
   // --------------------------------------------------------
 
   if (
-    paymentStatus !== "Paid"
+    paymentStatus !== "paid"
   ) {
 
     return `
-
       <div class="d-flex flex-wrap gap-1">
 
         <button
@@ -656,12 +692,8 @@ function buildActionButton(
             )}'
           )"
         >
-
           💰 Confirm Payment
-
         </button>
-
-
 
         <button
           class="btn btn-sm btn-outline-danger"
@@ -671,29 +703,24 @@ function buildActionButton(
             )}'
           )"
         >
-
           ✕ Payment Not Done
-
         </button>
 
       </div>
-
     `;
 
   }
 
 
-
   // --------------------------------------------------------
-  // PAYMENT CONFIRMED BUT NOT APPROVED
+  // PAYMENT DONE BUT NOT APPROVED
   // --------------------------------------------------------
 
   if (
-    approvalStatus !== "Approved"
+    approvalStatus !== "approved"
   ) {
 
     return `
-
       <button
         class="btn btn-sm btn-primary"
         onclick="approveReservation(
@@ -702,40 +729,32 @@ function buildActionButton(
           )}'
         )"
       >
-
         ✓ Approve
-
       </button>
-
     `;
 
   }
 
 
-
   // --------------------------------------------------------
-  // PAYMENT + APPROVAL COMPLETE
+  // READY FOR ALLOCATION
   // --------------------------------------------------------
 
   return `
-
     <button
       class="btn btn-sm btn-primary"
       onclick="openAllocationModal(
         '${escapeJs(
           reservation.reservationId
-        )}'
+        )}',
+        'new'
       )"
     >
-
       🏨 Allocate Room
-
     </button>
-
   `;
 
 }
-
 
 
 // ==========================================================
@@ -746,39 +765,35 @@ function paymentBadge(
   status
 ) {
 
-  status =
+  const value =
     String(
-      status || "Pending"
-    ).trim();
-
+      status ||
+      "Pending"
+    )
+      .trim()
+      .toLowerCase();
 
 
   if (
-    status === "Paid"
+    value === "paid"
   ) {
 
     return `
-
       <span class="badge bg-success">
         ✓ Paid
       </span>
-
     `;
 
   }
 
 
-
   return `
-
     <span class="badge bg-warning text-dark">
       Pending
     </span>
-
   `;
 
 }
-
 
 
 // ==========================================================
@@ -789,39 +804,48 @@ function approvalBadge(
   status
 ) {
 
-  status =
+  const value =
     String(
-      status || "Pending"
-    ).trim();
-
+      status ||
+      "Pending"
+    )
+      .trim()
+      .toLowerCase();
 
 
   if (
-    status === "Approved"
+    value === "approved"
   ) {
 
     return `
-
       <span class="badge bg-success">
         ✓ Approved
       </span>
-
     `;
 
   }
 
 
+  if (
+    value === "rejected"
+  ) {
+
+    return `
+      <span class="badge bg-danger">
+        Rejected
+      </span>
+    `;
+
+  }
+
 
   return `
-
     <span class="badge bg-warning text-dark">
       Pending
     </span>
-
   `;
 
 }
-
 
 
 // ==========================================================
@@ -832,65 +856,62 @@ function allocationBadge(
   reservation
 ) {
 
-  if (
+  const status =
     String(
-      reservation.status || ""
-    ).trim() === "Allocated"
+      reservation.status ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (
+    status === "allocated"
   ) {
 
     const block =
-      reservation.blockName || "";
+      reservation.blockName ||
+      "";
 
     const room =
-      reservation.roomNumber || "";
+      reservation.roomNumber ||
+      "";
 
     const bed =
-      reservation.bedNumber || "";
-
+      reservation.bedNumber ||
+      "";
 
 
     return `
-
       <span class="badge bg-success">
-
         ✓ Allocated
-
       </span>
 
       <br>
 
       <small class="text-muted">
-
         ${escapeHtml(block)}
         /
         ${escapeHtml(room)}
-
         ${
           bed
-            ? "/ " + escapeHtml(bed)
+            ? "/" +
+              escapeHtml(bed)
             : ""
         }
-
       </small>
-
     `;
 
   }
 
 
-
   return `
-
     <span class="badge bg-secondary">
-
       Not Allocated
-
     </span>
-
   `;
 
 }
-
 
 
 // ==========================================================
@@ -907,7 +928,6 @@ function openPaymentModal(
     );
 
 
-
   if (!reservation) {
 
     showMessage(
@@ -920,10 +940,8 @@ function openPaymentModal(
   }
 
 
-
   currentReservation =
     reservation;
-
 
 
   const idField =
@@ -932,53 +950,45 @@ function openPaymentModal(
     );
 
 
-
   const referenceField =
     document.getElementById(
       "paymentReference"
     );
 
 
-
   if (idField) {
-
     idField.value =
       reservationId;
-
   }
-
 
 
   if (referenceField) {
-
-    referenceField.value = "";
-
+    referenceField.value =
+      "";
   }
 
 
-
-  const modalElement =
+  const modal =
     document.getElementById(
       "paymentModal"
     );
 
 
-
   if (
-    modalElement &&
-    typeof bootstrap !== "undefined"
+    modal &&
+    typeof bootstrap !==
+      "undefined"
   ) {
 
     bootstrap.Modal
       .getOrCreateInstance(
-        modalElement
+        modal
       )
       .show();
 
   }
 
 }
-
 
 
 // ==========================================================
@@ -993,18 +1003,16 @@ async function confirmPayment() {
     )?.value.trim();
 
 
-
-  const paymentReference =
+  const reference =
     document.getElementById(
       "paymentReference"
     )?.value.trim();
 
 
-
   if (!reservationId) {
 
     showMessage(
-      "Reservation ID is required.",
+      "Reservation ID is missing.",
       "danger"
     );
 
@@ -1013,8 +1021,7 @@ async function confirmPayment() {
   }
 
 
-
-  if (!paymentReference) {
+  if (!reference) {
 
     showMessage(
       "Please enter the payment reference.",
@@ -1026,49 +1033,69 @@ async function confirmPayment() {
   }
 
 
-
   showLoading(true);
-
 
 
   try {
 
-    const url =
-      API_URL +
-      "?action=verifyPayment" +
-      "&reservationId=" +
-      encodeURIComponent(
-        reservationId
-      ) +
-      "&paymentReference=" +
-      encodeURIComponent(
-        paymentReference
-      );
+    const params =
+      new URLSearchParams();
 
 
+    params.set(
+      "action",
+      "verifyPayment"
+    );
 
-    const response =
-      await fetch(url);
 
+    params.set(
+      "reservationId",
+      reservationId
+    );
+
+
+    params.set(
+      "paymentReference",
+      reference
+    );
+
+
+    params.set(
+      "paymentAmount",
+      currentReservation?.rate ||
+        ""
+    );
+
+
+    params.set(
+      "paymentMethod",
+      "Manual Verification"
+    );
+
+
+    params.set(
+      "verifiedBy",
+      CURRENT_USER
+    );
 
 
     const result =
-      await response.json();
-
+      await apiRequest(
+        params
+      );
 
 
     if (!result.success) {
 
       showMessage(
         result.message ||
-        "Payment confirmation failed.",
+          "Payment verification failed.",
         "danger"
       );
 
       return;
 
     }
-
 
 
     closeModal(
@@ -1076,184 +1103,34 @@ async function confirmPayment() {
     );
 
 
-
     showMessage(
-      "Payment confirmed successfully. The reservation is now ready for approval.",
+      "Payment verified successfully.",
       "success"
     );
 
 
+    await refreshAll(
+      false
+    );
 
-    await loadReservations();
 
-  }
-  catch (error) {
+  } catch (error) {
 
     console.error(error);
 
     showMessage(
-      "Unable to confirm payment.",
+      error.message ||
+        "Unable to verify payment.",
       "danger"
     );
 
-  }
-  finally {
+  } finally {
 
     showLoading(false);
 
   }
 
 }
-
-
-
-// ==========================================================
-// RELEASE RESERVATION — PAYMENT NOT DONE
-// ==========================================================
-
-async function releaseReservation(
-  reservationId
-) {
-
-  const reservation =
-    findReservation(
-      reservationId
-    );
-
-
-
-  if (!reservation) {
-
-    showMessage(
-      "Reservation not found.",
-      "danger"
-    );
-
-    return;
-
-  }
-
-
-
-  const paymentStatus =
-    String(
-      reservation.paymentStatus || ""
-    ).trim();
-
-
-
-  if (
-    paymentStatus === "Paid"
-  ) {
-
-    showMessage(
-      "This reservation has already been paid and cannot be released as an unpaid reservation.",
-      "warning"
-    );
-
-    return;
-
-  }
-
-
-
-  const participantName =
-    reservation.participantName ||
-    "this participant";
-
-
-
-  const confirmed =
-    confirm(
-      "Payment has not been received for " +
-      participantName +
-      ".\n\n" +
-      "Release this reservation and return the bed to the available room pool?"
-    );
-
-
-
-  if (!confirmed) {
-
-    return;
-
-  }
-
-
-
-  showLoading(true);
-
-
-
-  try {
-
-    const url =
-      API_URL +
-      "?action=releaseReservation" +
-      "&reservationId=" +
-      encodeURIComponent(
-        reservationId
-      );
-
-
-
-    const response =
-      await fetch(url);
-
-
-
-    const result =
-      await response.json();
-
-
-
-    if (!result.success) {
-
-      showMessage(
-        result.message ||
-        "Unable to release the reservation.",
-        "danger"
-      );
-
-      return;
-
-    }
-
-
-
-    showMessage(
-      "Reservation released successfully. The bed has been returned to the available room pool.",
-      "success"
-    );
-
-
-
-    await loadReservations();
-
-  }
-  catch (error) {
-
-    console.error(
-      "Release reservation error:",
-      error
-    );
-
-
-
-    showMessage(
-      "Unable to release the reservation.",
-      "danger"
-    );
-
-  }
-  finally {
-
-    showLoading(false);
-
-  }
-
-}
-
 
 
 // ==========================================================
@@ -1264,89 +1141,55 @@ async function approveReservation(
   reservationId
 ) {
 
-  const reservation =
-    findReservation(
-      reservationId
-    );
-
-
-
-  if (!reservation) {
-
-    showMessage(
-      "Reservation not found.",
-      "danger"
-    );
-
-    return;
-
-  }
-
-
-
   if (
-    String(
-      reservation.paymentStatus || ""
-    ).trim() !== "Paid"
+    !confirm(
+      "Approve this reservation?"
+    )
   ) {
 
-    showMessage(
-      "Payment must be confirmed before approval.",
-      "warning"
-    );
-
     return;
 
   }
-
-
-
-  const confirmed =
-    confirm(
-      "Confirm approval of this accommodation reservation?"
-    );
-
-
-
-  if (!confirmed) {
-
-    return;
-
-  }
-
 
 
   showLoading(true);
 
 
-
   try {
 
-    const url =
-      API_URL +
-      "?action=approveReservation" +
-      "&reservationId=" +
-      encodeURIComponent(
-        reservationId
-      );
+    const params =
+      new URLSearchParams();
 
 
+    params.set(
+      "action",
+      "approveReservation"
+    );
 
-    const response =
-      await fetch(url);
 
+    params.set(
+      "reservationId",
+      reservationId
+    );
+
+
+    params.set(
+      "approvedBy",
+      CURRENT_USER
+    );
 
 
     const result =
-      await response.json();
-
+      await apiRequest(
+        params
+      );
 
 
     if (!result.success) {
 
       showMessage(
         result.message ||
-        "Approval failed.",
+          "Approval failed.",
         "danger"
       );
 
@@ -1355,28 +1198,28 @@ async function approveReservation(
     }
 
 
-
     showMessage(
-      "Reservation approved successfully. You can now allocate the room.",
+      "Reservation approved successfully.",
       "success"
     );
 
 
+    await refreshAll(
+      false
+    );
 
-    await loadReservations();
 
-  }
-  catch (error) {
+  } catch (error) {
 
     console.error(error);
 
     showMessage(
-      "Unable to approve reservation.",
+      error.message ||
+        "Unable to approve reservation.",
       "danger"
     );
 
-  }
-  finally {
+  } finally {
 
     showLoading(false);
 
@@ -1385,20 +1228,114 @@ async function approveReservation(
 }
 
 
+// ==========================================================
+// RELEASE RESERVATION
+// ==========================================================
+
+async function releaseReservation(
+  reservationId
+) {
+
+  if (
+    !confirm(
+      "Release this reservation because payment was not completed?"
+    )
+  ) {
+
+    return;
+
+  }
+
+
+  showLoading(true);
+
+
+  try {
+
+    const params =
+      new URLSearchParams();
+
+
+    params.set(
+      "action",
+      "releaseReservation"
+    );
+
+
+    params.set(
+      "reservationId",
+      reservationId
+    );
+
+
+    params.set(
+      "releasedBy",
+      CURRENT_USER
+    );
+
+
+    const result =
+      await apiRequest(
+        params
+      );
+
+
+    if (!result.success) {
+
+      showMessage(
+        result.message ||
+          "Unable to release reservation.",
+        "danger"
+      );
+
+      return;
+
+    }
+
+
+    showMessage(
+      "Reservation released successfully.",
+      "success"
+    );
+
+
+    await refreshAll(
+      false
+    );
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    showMessage(
+      error.message ||
+        "Unable to release reservation.",
+      "danger"
+    );
+
+  } finally {
+
+    showLoading(false);
+
+  }
+
+}
+
 
 // ==========================================================
 // OPEN ALLOCATION MODAL
 // ==========================================================
 
 function openAllocationModal(
-  reservationId
+  reservationId,
+  mode = "new"
 ) {
 
   const reservation =
     findReservation(
       reservationId
     );
-
 
 
   if (!reservation) {
@@ -1413,143 +1350,96 @@ function openAllocationModal(
   }
 
 
-
-  if (
-    String(
-      reservation.paymentStatus || ""
-    ).trim() !== "Paid"
-  ) {
-
-    showMessage(
-      "Payment must be confirmed first.",
-      "warning"
-    );
-
-    return;
-
-  }
-
-
-
-  if (
-    String(
-      reservation.approvalStatus || ""
-    ).trim() !== "Approved"
-  ) {
-
-    showMessage(
-      "Reservation must be approved first.",
-      "warning"
-    );
-
-    return;
-
-  }
-
-
-
   currentReservation =
     reservation;
 
 
-
-  setValue(
-    "allocationReservationId",
-    reservationId
-  );
-
-
-
-  setValue(
-    "blockName",
-    ""
-  );
+  allocationMode =
+    String(
+      mode ||
+      "new"
+    )
+      .toLowerCase();
 
 
-
-  setValue(
-    "roomNumber",
-    ""
-  );
-
+  const idField =
+    document.getElementById(
+      "allocationReservationId"
+    );
 
 
-  setValue(
-    "bedNumber",
-    ""
-  );
-
-
-
-  const participant =
+  const participantField =
     document.getElementById(
       "allocationParticipant"
     );
 
 
-
-  if (participant) {
-
-    participant.innerHTML = `
-
-      <div class="alert alert-info">
-
-        <div class="row g-2">
-
-          <div class="col-md-6">
-
-            <strong>Participant:</strong><br>
-
-            ${escapeHtml(
-              reservation.participantName
-            )}
-
-          </div>
+  const blockField =
+    document.getElementById(
+      "blockName"
+    );
 
 
-
-          <div class="col-md-6">
-
-            <strong>Registration:</strong><br>
-
-            ${escapeHtml(
-              reservation.registrationCode
-            )}
-
-          </div>
+  const roomField =
+    document.getElementById(
+      "roomNumber"
+    );
 
 
-
-          <div class="col-md-6">
-
-            <strong>Room Type:</strong><br>
-
-            ${escapeHtml(
-              reservation.roomType
-            )}
-
-          </div>
+  const bedField =
+    document.getElementById(
+      "bedNumber"
+    );
 
 
+  if (idField) {
+    idField.value =
+      reservationId;
+  }
 
-          <div class="col-md-6">
 
-            <strong>Reservation:</strong><br>
+  if (participantField) {
 
-            ${escapeHtml(
-              reservation.reservationId
-            )}
-
-          </div>
-
-        </div>
-
-      </div>
-
-    `;
+    participantField.value =
+      (
+        reservation.participantName ||
+        ""
+      ) +
+      " (" +
+      (
+        reservation.registrationCode ||
+        ""
+      ) +
+      ")";
 
   }
 
+
+  if (blockField) {
+
+    blockField.value =
+      reservation.blockName ||
+      "";
+
+  }
+
+
+  if (roomField) {
+
+    roomField.value =
+      reservation.roomNumber ||
+      "";
+
+  }
+
+
+  if (bedField) {
+
+    bedField.value =
+      reservation.bedNumber ||
+      "";
+
+  }
 
 
   const message =
@@ -1558,30 +1448,47 @@ function openAllocationModal(
     );
 
 
-
   if (message) {
-
     message.innerHTML = "";
+  }
+
+
+  const button =
+    document.getElementById(
+      "allocationSubmitButton"
+    );
+
+
+  if (button) {
+
+    button.disabled =
+      false;
+
+
+    button.innerHTML =
+      allocationMode ===
+      "edit"
+        ? "Save Changes"
+        : "Save Allocation";
 
   }
 
 
-
-  const modalElement =
+  const modal =
     document.getElementById(
       "allocationModal"
     );
 
 
-
   if (
-    modalElement &&
-    typeof bootstrap !== "undefined"
+    modal &&
+    typeof bootstrap !==
+      "undefined"
   ) {
 
     bootstrap.Modal
       .getOrCreateInstance(
-        modalElement
+        modal
       )
       .show();
 
@@ -1590,9 +1497,11 @@ function openAllocationModal(
 }
 
 
-
 // ==========================================================
-// SUBMIT ROOM ALLOCATION
+// SUBMIT ALLOCATION
+//
+// NEW -> allocateRoom
+// EDIT -> editAllocation
 // ==========================================================
 
 async function submitAllocation() {
@@ -1603,12 +1512,10 @@ async function submitAllocation() {
     )?.value.trim();
 
 
-
   const blockName =
     document.getElementById(
       "blockName"
     )?.value.trim();
-
 
 
   const roomNumber =
@@ -1617,12 +1524,16 @@ async function submitAllocation() {
     )?.value.trim();
 
 
-
   const bedNumber =
     document.getElementById(
       "bedNumber"
     )?.value.trim();
 
+
+  const message =
+    document.getElementById(
+      "allocationMessage"
+    );
 
 
   if (!reservationId) {
@@ -1637,18 +1548,16 @@ async function submitAllocation() {
   }
 
 
-
   if (!blockName) {
 
     showAllocationMessage(
-      "Please select a block.",
+      "Please enter/select a block.",
       "warning"
     );
 
     return;
 
   }
-
 
 
   if (!roomNumber) {
@@ -1663,7 +1572,6 @@ async function submitAllocation() {
   }
 
 
-
   if (!bedNumber) {
 
     showAllocationMessage(
@@ -1676,65 +1584,126 @@ async function submitAllocation() {
   }
 
 
-
-  const confirmed =
-    confirm(
-      "Confirm this room allocation?"
-    );
+  const isEdit =
+    allocationMode ===
+    "edit";
 
 
-
-  if (!confirmed) {
+  if (
+    !confirm(
+      isEdit
+        ? "Save these allocation changes?"
+        : "Confirm this room allocation?"
+    )
+  ) {
 
     return;
 
   }
 
 
+  const button =
+    document.getElementById(
+      "allocationSubmitButton"
+    );
+
+
+  if (button) {
+
+    button.disabled =
+      true;
+
+    button.innerHTML =
+      isEdit
+        ? "Saving..."
+        : "Allocating...";
+
+  }
+
 
   showLoading(true);
 
 
-
   try {
 
-    const url =
-      API_URL +
-      "?action=allocateRoom" +
-      "&reservationId=" +
-      encodeURIComponent(
-        reservationId
-      ) +
-      "&blockName=" +
-      encodeURIComponent(
-        blockName
-      ) +
-      "&roomNumber=" +
-      encodeURIComponent(
-        roomNumber
-      ) +
-      "&bedNumber=" +
-      encodeURIComponent(
-        bedNumber
+    const params =
+      new URLSearchParams();
+
+
+    // ------------------------------------------------------
+    // CRITICAL:
+    // Correct backend action names.
+    // ------------------------------------------------------
+
+    const action =
+      isEdit
+        ? "editAllocation"
+        : "allocateRoom";
+
+
+    params.set(
+      "action",
+      action
+    );
+
+
+    params.set(
+      "reservationId",
+      reservationId
+    );
+
+
+    params.set(
+      "blockName",
+      blockName
+    );
+
+
+    params.set(
+      "roomNumber",
+      roomNumber
+    );
+
+
+    params.set(
+      "bedNumber",
+      bedNumber
+    );
+
+
+    // ------------------------------------------------------
+    // CRITICAL:
+    // Backend requires these.
+    // ------------------------------------------------------
+
+    if (isEdit) {
+
+      params.set(
+        "editedBy",
+        CURRENT_USER
       );
 
+    } else {
 
+      params.set(
+        "allocatedBy",
+        CURRENT_USER
+      );
 
-    const response =
-      await fetch(url);
-
+    }
 
 
     const result =
-      await response.json();
-
+      await apiRequest(
+        params
+      );
 
 
     if (!result.success) {
 
       showAllocationMessage(
         result.message ||
-        "Room allocation failed.",
+          "Allocation failed.",
         "danger"
       );
 
@@ -1743,41 +1712,60 @@ async function submitAllocation() {
     }
 
 
-
     closeModal(
       "allocationModal"
     );
 
 
-
     showMessage(
-      "Room allocated successfully.",
+      isEdit
+        ? "Room allocation updated successfully."
+        : "Room allocated successfully.",
       "success"
     );
 
 
+    // ------------------------------------------------------
+    // REFRESH BOTH.
+    // ------------------------------------------------------
 
-    await loadReservations();
+    await refreshAll(
+      false
+    );
 
-  }
-  catch (error) {
+
+  } catch (error) {
 
     console.error(error);
 
+
     showAllocationMessage(
-      "Unable to allocate room.",
+      error.message ||
+        "Unable to save room allocation.",
       "danger"
     );
 
-  }
-  finally {
+
+  } finally {
 
     showLoading(false);
+
+
+    if (button) {
+
+      button.disabled =
+        false;
+
+      button.innerHTML =
+        isEdit
+          ? "Save Changes"
+          : "Save Allocation";
+
+    }
 
   }
 
 }
-
 
 
 // ==========================================================
@@ -1794,7 +1782,6 @@ function viewReservation(
     );
 
 
-
   if (!reservation) {
 
     showMessage(
@@ -1807,10 +1794,8 @@ function viewReservation(
   }
 
 
-
   currentReservation =
     reservation;
-
 
 
   const container =
@@ -1819,11 +1804,9 @@ function viewReservation(
     );
 
 
-
   if (!container) {
     return;
   }
-
 
 
   container.innerHTML = `
@@ -1831,218 +1814,147 @@ function viewReservation(
     <div class="row g-3">
 
       <div class="col-md-6">
-
-        <strong>
-          Reservation ID
-        </strong>
-
+        <strong>Reservation ID</strong>
         <div>
           ${escapeHtml(
             reservation.reservationId
           )}
         </div>
-
       </div>
 
 
-
       <div class="col-md-6">
-
-        <strong>
-          Registration Code
-        </strong>
-
+        <strong>Registration Code</strong>
         <div>
           ${escapeHtml(
             reservation.registrationCode
           )}
         </div>
-
       </div>
 
 
-
       <div class="col-md-6">
-
-        <strong>
-          Participant
-        </strong>
-
+        <strong>Participant</strong>
         <div>
           ${escapeHtml(
             reservation.participantName
           )}
         </div>
-
       </div>
 
 
-
       <div class="col-md-6">
-
-        <strong>
-          Staff ID
-        </strong>
-
+        <strong>Staff ID</strong>
         <div>
           ${escapeHtml(
-            reservation.staffId || ""
+            reservation.staffId ||
+            ""
           )}
         </div>
-
       </div>
 
 
-
       <div class="col-md-6">
-
-        <strong>
-          Room Type
-        </strong>
-
+        <strong>Room Type</strong>
         <div>
           ${escapeHtml(
-            reservation.roomType
+            reservation.roomType ||
+            ""
           )}
         </div>
-
       </div>
 
 
-
       <div class="col-md-6">
-
-        <strong>
-          Amount
-        </strong>
-
+        <strong>Rate</strong>
         <div>
-
           GH₵ ${Number(
-            reservation.rate || 0
+            reservation.rate ||
+            0
           ).toLocaleString(
             "en-GH",
             {
-              minimumFractionDigits: 2
+              minimumFractionDigits:
+                2
             }
           )}
-
         </div>
-
       </div>
 
 
-
       <div class="col-md-4">
-
-        <strong>
-          Payment
-        </strong>
-
+        <strong>Payment</strong>
         <div>
-
           ${paymentBadge(
             reservation.paymentStatus
           )}
-
         </div>
-
       </div>
 
 
-
       <div class="col-md-4">
-
-        <strong>
-          Approval
-        </strong>
-
+        <strong>Approval</strong>
         <div>
-
           ${approvalBadge(
             reservation.approvalStatus
           )}
-
         </div>
-
       </div>
-
 
 
       <div class="col-md-4">
-
-        <strong>
-          Status
-        </strong>
-
+        <strong>Status</strong>
         <div>
-
-          ${statusBadge(
-            reservation.status
+          ${allocationBadge(
+            reservation
           )}
-
         </div>
-
       </div>
-
 
 
       <div class="col-12">
 
         <hr>
 
-        <h6 class="fw-bold">
+        <h6>
           Room Allocation
         </h6>
 
-        ${
-          String(
-            reservation.status || ""
-          ).trim() === "Allocated"
+        <div class="row">
 
-            ? `
+          <div class="col-md-4">
+            <strong>Block</strong>
+            <div>
+              ${escapeHtml(
+                reservation.blockName ||
+                "Not allocated"
+              )}
+            </div>
+          </div>
 
-              <div class="alert alert-success">
 
-                <strong>
-                  ✓ Room Allocated
-                </strong>
+          <div class="col-md-4">
+            <strong>Room</strong>
+            <div>
+              ${escapeHtml(
+                reservation.roomNumber ||
+                "Not allocated"
+              )}
+            </div>
+          </div>
 
-                <br>
 
-                Block:
-                ${escapeHtml(
-                  reservation.blockName || ""
-                )}
+          <div class="col-md-4">
+            <strong>Bed</strong>
+            <div>
+              ${escapeHtml(
+                reservation.bedNumber ||
+                "Not allocated"
+              )}
+            </div>
+          </div>
 
-                <br>
-
-                Room:
-                ${escapeHtml(
-                  reservation.roomNumber || ""
-                )}
-
-                <br>
-
-                Bed:
-                ${escapeHtml(
-                  reservation.bedNumber || ""
-                )}
-
-              </div>
-
-            `
-
-            : `
-
-              <div class="alert alert-secondary">
-
-                Room has not yet been allocated.
-
-              </div>
-
-            `
-        }
+        </div>
 
       </div>
 
@@ -2051,96 +1963,27 @@ function viewReservation(
   `;
 
 
-
-  const modalElement =
+  const modal =
     document.getElementById(
       "reservationModal"
     );
 
 
-
   if (
-    modalElement &&
-    typeof bootstrap !== "undefined"
+    modal &&
+    typeof bootstrap !==
+      "undefined"
   ) {
 
     bootstrap.Modal
       .getOrCreateInstance(
-        modalElement
+        modal
       )
       .show();
 
   }
 
 }
-
-
-
-// ==========================================================
-// STATUS BADGE
-// ==========================================================
-
-function statusBadge(
-  status
-) {
-
-  status =
-    String(
-      status || "Reserved"
-    ).trim();
-
-
-
-  let className =
-    "bg-secondary";
-
-
-
-  if (
-    status === "Reserved"
-  ) {
-
-    className =
-      "bg-warning text-dark";
-
-  }
-
-
-
-  if (
-    status === "Allocated"
-  ) {
-
-    className =
-      "bg-success";
-
-  }
-
-
-
-  if (
-    status === "Cancelled"
-  ) {
-
-    className =
-      "bg-danger";
-
-  }
-
-
-
-  return `
-
-    <span class="badge ${className}">
-
-      ${escapeHtml(status)}
-
-    </span>
-
-  `;
-
-}
-
 
 
 // ==========================================================
@@ -2155,568 +1998,176 @@ function findReservation(
     function (reservation) {
 
       return String(
-        reservation.reservationId || ""
-      ).trim() ===
+        reservation.reservationId ||
+        ""
+      ) ===
       String(
-        reservationId || ""
-      ).trim();
+        reservationId ||
+        ""
+      );
 
     }
-  );
+  ) || null;
 
 }
 
 
-
 // ==========================================================
-// ==========================================================
-// EXPORT SYSTEM
-// ==========================================================
+// API GET
 // ==========================================================
 
-
-
-// ==========================================================
-// EXPORT CURRENT FILTERED RESULTS
-// ==========================================================
-
-function exportCurrentResults() {
-
-  const reservations =
-    getFilteredReservations();
-
-
-
-  if (!reservations.length) {
-
-    showMessage(
-      "There are no reservations in the current filter to export.",
-      "warning"
-    );
-
-    return;
-
-  }
-
-
-
-  exportReservationsToCSV(
-    reservations,
-    "Current_Results"
-  );
-
-}
-
-
-
-// ==========================================================
-// EXPORT ALL RESERVATIONS
-// ==========================================================
-
-function exportAllReservations() {
-
-  if (!allReservations.length) {
-
-    showMessage(
-      "There are no reservations available to export.",
-      "warning"
-    );
-
-    return;
-
-  }
-
-
-
-  exportReservationsToCSV(
-    allReservations,
-    "All_Reservations"
-  );
-
-}
-
-
-
-// ==========================================================
-// EXPORT BY STATUS
-// ==========================================================
-
-function exportByStatus(
-  status
+async function apiGet(
+  action
 ) {
-
-  let reservations = [];
-
-
-
-  if (
-    status === "Paid"
-  ) {
-
-    reservations =
-      allReservations.filter(
-        function (reservation) {
-
-          return String(
-            reservation.paymentStatus || ""
-          ).trim() === "Paid";
-
-        }
-      );
-
-  }
-  else if (
-    status === "Approved"
-  ) {
-
-    reservations =
-      allReservations.filter(
-        function (reservation) {
-
-          return String(
-            reservation.approvalStatus || ""
-          ).trim() === "Approved";
-
-        }
-      );
-
-  }
-  else {
-
-    reservations =
-      allReservations.filter(
-        function (reservation) {
-
-          return String(
-            reservation.status || ""
-          ).trim() === status;
-
-        }
-      );
-
-  }
-
-
-
-  if (!reservations.length) {
-
-    showMessage(
-      "No " +
-      status.toLowerCase() +
-      " reservations found.",
-      "warning"
-    );
-
-    return;
-
-  }
-
-
-
-  exportReservationsToCSV(
-    reservations,
-    status
-  );
-
-}
-
-
-
-// ==========================================================
-// EXPORT UNALLOCATED
-// ==========================================================
-
-function exportUnallocated() {
-
-  const reservations =
-    allReservations.filter(
-      function (reservation) {
-
-        return String(
-          reservation.status || ""
-        ).trim() !== "Allocated" &&
-        String(
-          reservation.status || ""
-        ).trim() !== "Cancelled";
-
-      }
-    );
-
-
-
-  if (!reservations.length) {
-
-    showMessage(
-      "No unallocated reservations found.",
-      "warning"
-    );
-
-    return;
-
-  }
-
-
-
-  exportReservationsToCSV(
-    reservations,
-    "Unallocated"
-  );
-
-}
-
-
-
-// ==========================================================
-// MAIN CSV EXPORT
-// ==========================================================
-
-function exportReservationsToCSV(
-  reservations,
-  reportName
-) {
-
-  if (
-    !Array.isArray(
-      reservations
-    ) ||
-    !reservations.length
-  ) {
-
-    return;
-
-  }
-
-
-
-  const headers = [
-
-    "Reservation ID",
-
-    "Registration Code",
-
-    "Participant Name",
-
-    "Staff ID",
-
-    "Room Type",
-
-    "Rate",
-
-    "Rate Type",
-
-    "Payment Status",
-
-    "Payment Reference",
-
-    "Approval Status",
-
-    "Reservation Status",
-
-    "Block",
-
-    "Room Number",
-
-    "Bed Number",
-
-    "Allocated At",
-
-    "Allocated By"
-
-  ];
-
-
-
-  const rows =
-    reservations.map(
-      function (reservation) {
-
-        return [
-
-          reservation.reservationId || "",
-
-          reservation.registrationCode || "",
-
-          reservation.participantName || "",
-
-          reservation.staffId || "",
-
-          reservation.roomType || "",
-
-          formatAmount(
-            reservation.rate
-          ),
-
-          reservation.rateType || "",
-
-          reservation.paymentStatus || "Pending",
-
-          reservation.paymentReference || "",
-
-          reservation.approvalStatus || "Pending",
-
-          reservation.status || "Reserved",
-
-          reservation.blockName || "",
-
-          reservation.roomNumber || "",
-
-          reservation.bedNumber || "",
-
-          reservation.allocatedAt || "",
-
-          reservation.allocatedBy || ""
-
-        ];
-
-      }
-    );
-
-
-
-  const csv =
-    createCSV(
-      headers,
-      rows
-    );
-
-
-
-  downloadCSV(
-    csv,
-    reportName
-  );
-
-}
-
-
-
-// ==========================================================
-// CREATE CSV
-// ==========================================================
-
-function createCSV(
-  headers,
-  rows
-) {
-
-  const allRows = [
-    headers,
-    ...rows
-  ];
-
-
-
-  return allRows
-    .map(
-      function (row) {
-
-        return row
-          .map(
-            function (value) {
-
-              return csvEscape(
-                value
-              );
-
-            }
-          )
-          .join(",");
-
-      }
-    )
-    .join("\r\n");
-
-}
-
-
-
-// ==========================================================
-// CSV ESCAPE
-// ==========================================================
-
-function csvEscape(
-  value
-) {
-
-  if (
-    value === null ||
-    value === undefined
-  ) {
-
-    return '""';
-
-  }
-
-
-
-  let text =
-    String(value);
-
-
-
-  // Prevent Excel from interpreting
-  // values such as formulas.
-
-  if (
-    /^[=+\-@]/.test(text)
-  ) {
-
-    text =
-      "'" + text;
-
-  }
-
-
-
-  text =
-    text.replace(
-      /"/g,
-      '""'
-    );
-
-
-
-  return '"' +
-    text +
-    '"';
-
-}
-
-
-
-// ==========================================================
-// FORMAT AMOUNT
-// ==========================================================
-
-function formatAmount(
-  amount
-) {
-
-  const number =
-    Number(
-      amount || 0
-    );
-
-
-
-  if (
-    isNaN(number)
-  ) {
-
-    return amount || "";
-
-  }
-
-
-
-  return number.toFixed(2);
-
-}
-
-
-
-// ==========================================================
-// DOWNLOAD CSV
-// ==========================================================
-
-function downloadCSV(
-  csv,
-  reportName
-) {
-
-  // UTF-8 BOM helps Excel
-  // correctly recognize characters.
-
-  const BOM =
-    "\uFEFF";
-
-
-
-  const blob =
-    new Blob(
-      [
-        BOM +
-        csv
-      ],
-      {
-        type:
-          "text/csv;charset=utf-8;"
-      }
-    );
-
-
 
   const url =
-    URL.createObjectURL(
-      blob
+    API_URL +
+    "?action=" +
+    encodeURIComponent(
+      action
     );
 
 
-
-  const link =
-    document.createElement(
-      "a"
+  const response =
+    await fetch(
+      url,
+      {
+        method: "GET",
+        cache: "no-store"
+      }
     );
 
 
-
-  const date =
-    new Date()
-      .toISOString()
-      .slice(
-        0,
-        10
-      );
-
-
-
-  link.href =
-    url;
-
-
-
-  link.download =
-    "SNMM2026_" +
-    reportName +
-    "_" +
-    date +
-    ".csv";
-
-
-
-  document.body.appendChild(
-    link
-  );
-
-
-
-  link.click();
-
-
-
-  document.body.removeChild(
-    link
-  );
-
-
-
-  URL.revokeObjectURL(
-    url
-  );
-
-
-
-  showMessage(
-    "Export completed successfully.",
-    "success"
+  return parseApiResponse(
+    response
   );
 
 }
 
 
+// ==========================================================
+// API REQUEST
+// ==========================================================
+
+async function apiRequest(
+  params
+) {
+
+  const url =
+    API_URL +
+    "?" +
+    params.toString();
+
+
+  const response =
+    await fetch(
+      url,
+      {
+        method: "GET",
+        cache: "no-store"
+      }
+    );
+
+
+  return parseApiResponse(
+    response
+  );
+
+}
+
 
 // ==========================================================
-// SHOW MESSAGE
+// PARSE API RESPONSE
+// ==========================================================
+
+async function parseApiResponse(
+  response
+) {
+
+  const text =
+    await response.text();
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      "Server returned HTTP " +
+      response.status
+    );
+
+  }
+
+
+  let result;
+
+
+  try {
+
+    result =
+      JSON.parse(
+        text
+      );
+
+  } catch (error) {
+
+    console.error(
+      "Invalid JSON response:",
+      text
+    );
+
+
+    throw new Error(
+      "The server returned an invalid response. Please make sure the latest Apps Script deployment is active."
+    );
+
+  }
+
+
+  return result;
+
+}
+
+
+// ==========================================================
+// SHOW ALLOCATION MESSAGE
+// ==========================================================
+
+function showAllocationMessage(
+  message,
+  type = "danger"
+) {
+
+  const element =
+    document.getElementById(
+      "allocationMessage"
+    );
+
+
+  if (!element) {
+    return;
+  }
+
+
+  element.innerHTML = `
+
+    <div
+      class="alert alert-${escapeHtml(
+        type
+      )}"
+      role="alert"
+    >
+      ${escapeHtml(
+        message
+      )}
+    </div>
+
+  `;
+
+}
+
+
+// ==========================================================
+// SHOW GLOBAL MESSAGE
 // ==========================================================
 
 function showMessage(
@@ -2730,22 +2181,23 @@ function showMessage(
     );
 
 
-
   if (!area) {
     return;
   }
 
 
-
   area.innerHTML = `
 
     <div
-      class="alert alert-${escapeHtml(type)}
-           alert-dismissible fade show"
+      class="alert alert-${escapeHtml(
+        type
+      )} alert-dismissible fade show"
       role="alert"
     >
 
-      ${escapeHtml(message)}
+      ${escapeHtml(
+        message
+      )}
 
       <button
         type="button"
@@ -2760,45 +2212,54 @@ function showMessage(
 }
 
 
-
 // ==========================================================
-// ALLOCATION MESSAGE
+// CLOSE MODAL
 // ==========================================================
 
-function showAllocationMessage(
-  message,
-  type = "info"
+function closeModal(
+  id
 ) {
 
-  const area =
+  const element =
     document.getElementById(
-      "allocationMessage"
+      id
     );
 
 
+  if (
+    element &&
+    typeof bootstrap !==
+      "undefined"
+  ) {
 
-  if (!area) {
-    return;
+    const modal =
+      bootstrap.Modal
+        .getInstance(
+          element
+        );
+
+
+    if (modal) {
+
+      modal.hide();
+
+    } else {
+
+      bootstrap.Modal
+        .getOrCreateInstance(
+          element
+        )
+        .hide();
+
+    }
+
   }
-
-
-
-  area.innerHTML = `
-
-    <div class="alert alert-${escapeHtml(type)}">
-
-      ${escapeHtml(message)}
-
-    </div>
-
-  `;
 
 }
 
 
-
 // ==========================================================
-// LOADING OVERLAY
+// LOADING
 // ==========================================================
 
 function showLoading(
@@ -2811,59 +2272,17 @@ function showLoading(
     );
 
 
-
   if (!overlay) {
     return;
   }
 
 
-
-  overlay.classList.toggle(
-    "d-none",
-    !show
-  );
-
-}
-
-
-
-// ==========================================================
-// CLOSE MODAL
-// ==========================================================
-
-function closeModal(
-  modalId
-) {
-
-  const element =
-    document.getElementById(
-      modalId
-    );
-
-
-
-  if (
-    element &&
-    typeof bootstrap !== "undefined"
-  ) {
-
-    const modal =
-      bootstrap.Modal.getInstance(
-        element
-      );
-
-
-
-    if (modal) {
-
-      modal.hide();
-
-    }
-
-  }
+  overlay.style.display =
+    show
+      ? "flex"
+      : "none";
 
 }
-
 
 
 // ==========================================================
@@ -2871,15 +2290,14 @@ function closeModal(
 // ==========================================================
 
 function setText(
-  elementId,
+  id,
   value
 ) {
 
   const element =
     document.getElementById(
-      elementId
+      id
     );
-
 
 
   if (element) {
@@ -2892,36 +2310,8 @@ function setText(
 }
 
 
-
 // ==========================================================
-// SET VALUE
-// ==========================================================
-
-function setValue(
-  elementId,
-  value
-) {
-
-  const element =
-    document.getElementById(
-      elementId
-    );
-
-
-
-  if (element) {
-
-    element.value =
-      value;
-
-  }
-
-}
-
-
-
-// ==========================================================
-// HTML ESCAPE
+// ESCAPE HTML
 // ==========================================================
 
 function escapeHtml(
@@ -2955,9 +2345,8 @@ function escapeHtml(
 }
 
 
-
 // ==========================================================
-// JAVASCRIPT ESCAPE
+// ESCAPE JAVASCRIPT
 // ==========================================================
 
 function escapeJs(
@@ -2983,155 +2372,438 @@ function escapeJs(
 }
 
 
+// ==========================================================
+// EXPORT CURRENT RESULTS
+// ==========================================================
+
+function exportCurrentResults() {
+
+  const data =
+    getFilteredReservations();
+
+
+  downloadCsv(
+    data,
+    "SNMM_2026_Current_Results.csv"
+  );
+
+}
+
 
 // ==========================================================
-// DARK / LIGHT MODE
+// EXPORT ALL
 // ==========================================================
 
-document.addEventListener(
-  "DOMContentLoaded",
-  function () {
+function exportAllReservations() {
 
-    initializeTheme();
+  downloadCsv(
+    allReservations,
+    "SNMM_2026_All_Reservations.csv"
+  );
+
+}
+
+
+// ==========================================================
+// EXPORT BY STATUS
+// ==========================================================
+
+function exportByStatus(
+  status
+) {
+
+  const value =
+    String(
+      status ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const data =
+    allReservations.filter(
+      function (r) {
+
+        return (
+          String(
+            r.status ||
+            ""
+          )
+            .trim()
+            .toLowerCase() ===
+          value
+        );
+
+      }
+    );
+
+
+  downloadCsv(
+    data,
+    "SNMM_2026_" +
+      status +
+      ".csv"
+  );
+
+}
+
+
+// ==========================================================
+// EXPORT UNALLOCATED
+// ==========================================================
+
+function exportUnallocated() {
+
+  const data =
+    allReservations.filter(
+      function (r) {
+
+        const status =
+          String(
+            r.status ||
+            ""
+          )
+            .trim()
+            .toLowerCase();
+
+
+        return (
+          status !== "allocated" &&
+          status !== "cancelled"
+        );
+
+      }
+    );
+
+
+  downloadCsv(
+    data,
+    "SNMM_2026_Unallocated.csv"
+  );
+
+}
+
+
+// ==========================================================
+// GET FILTERED
+// ==========================================================
+
+function getFilteredReservations() {
+
+  const search =
+    String(
+      document.getElementById(
+        "searchInput"
+      )?.value ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const status =
+    String(
+      document.getElementById(
+        "statusFilter"
+      )?.value ||
+      "All"
+    )
+      .trim()
+      .toLowerCase();
+
+
+  return allReservations.filter(
+    function (reservation) {
+
+      const reservationId =
+        String(
+          reservation.reservationId ||
+          ""
+        )
+          .toLowerCase();
+
+
+      const registrationCode =
+        String(
+          reservation.registrationCode ||
+          ""
+        )
+          .toLowerCase();
+
+
+      const participantName =
+        String(
+          reservation.participantName ||
+          ""
+        )
+          .toLowerCase();
+
+
+      const reservationStatus =
+        String(
+          reservation.status ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const paymentStatus =
+        String(
+          reservation.paymentStatus ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const approvalStatus =
+        String(
+          reservation.approvalStatus ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const matchesSearch =
+        !search ||
+        reservationId.includes(
+          search
+        ) ||
+        registrationCode.includes(
+          search
+        ) ||
+        participantName.includes(
+          search
+        );
+
+
+      const matchesStatus =
+        status === "all" ||
+        reservationStatus === status ||
+        paymentStatus === status ||
+        approvalStatus === status;
+
+
+      return (
+        matchesSearch &&
+        matchesStatus
+      );
+
+    }
+  );
+
+}
+
+
+// ==========================================================
+// CSV
+// ==========================================================
+
+function downloadCsv(
+  reservations,
+  filename
+) {
+
+  if (
+    !reservations ||
+    !reservations.length
+  ) {
+
+    showMessage(
+      "There is no data to export.",
+      "warning"
+    );
+
+    return;
 
   }
-);
 
+
+  const headers = [
+    "Reservation ID",
+    "Registration Code",
+    "Participant Name",
+    "Staff ID",
+    "Room Type",
+    "Rate",
+    "Rate Type",
+    "Status",
+    "Payment Status",
+    "Approval Status",
+    "Block",
+    "Room",
+    "Bed",
+    "Payment Reference",
+    "Payment Amount",
+    "Payment Method",
+    "Allocated By",
+    "Allocated At"
+  ];
+
+
+  const rows =
+    reservations.map(
+      function (r) {
+
+        return [
+          r.reservationId,
+          r.registrationCode,
+          r.participantName,
+          r.staffId,
+          r.roomType,
+          r.rate,
+          r.rateType,
+          r.status,
+          r.paymentStatus,
+          r.approvalStatus,
+          r.blockName,
+          r.roomNumber,
+          r.bedNumber,
+          r.paymentReference,
+          r.paymentAmount,
+          r.paymentMethod,
+          r.allocatedBy,
+          r.allocatedAt
+        ];
+
+      }
+    );
+
+
+  const csv =
+    [
+      headers,
+      ...rows
+    ]
+      .map(
+        row =>
+          row
+            .map(
+              value =>
+                '"' +
+                String(
+                  value ??
+                  ""
+                )
+                  .replace(
+                    /"/g,
+                    '""'
+                  ) +
+                '"'
+            )
+            .join(",")
+      )
+      .join("\r\n");
+
+
+  const blob =
+    new Blob(
+      [
+        "\ufeff" +
+        csv
+      ],
+      {
+        type:
+          "text/csv;charset=utf-8;"
+      }
+    );
+
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+
+  const link =
+    document.createElement(
+      "a"
+    );
+
+
+  link.href =
+    url;
+
+  link.download =
+    filename;
+
+
+  document.body.appendChild(
+    link
+  );
+
+
+  link.click();
+
+
+  link.remove();
+
+
+  URL.revokeObjectURL(
+    url
+  );
+
+}
 
 
 // ==========================================================
-// INITIALIZE THEME
+// THEME
 // ==========================================================
 
 function initializeTheme() {
 
-  const savedTheme =
+  const saved =
     localStorage.getItem(
-      "snmm-theme"
+      "snmmTheme"
+    ) ||
+    "light";
+
+
+  document.documentElement
+    .setAttribute(
+      "data-bs-theme",
+      saved
     );
 
 
-
-  if (
-    savedTheme === "dark"
-  ) {
-
-    document.body.classList.add(
-      "dark-mode"
-    );
-
-  }
-  else {
-
-    document.body.classList.remove(
-      "dark-mode"
-    );
-
-  }
-
-
-
-  updateThemeButton();
-
-}
-
-
-
-// ==========================================================
-// TOGGLE THEME
-// ==========================================================
-
-function toggleTheme() {
-
-  document.body.classList.toggle(
-    "dark-mode"
-  );
-
-
-
-  const isDark =
-    document.body.classList.contains(
-      "dark-mode"
-    );
-
-
-
-  localStorage.setItem(
-    "snmm-theme",
-    isDark
-      ? "dark"
-      : "light"
-  );
-
-
-
-  updateThemeButton();
-
-}
-
-
-
-// ==========================================================
-// UPDATE THEME BUTTON
-// ==========================================================
-
-function updateThemeButton() {
-
-  const button =
+  const toggle =
     document.getElementById(
       "themeToggle"
     );
 
 
+  if (toggle) {
 
-  if (!button) {
-    return;
-  }
-
-
-
-  const isDark =
-    document.body.classList.contains(
-      "dark-mode"
-    );
+    toggle.checked =
+      saved === "dark";
 
 
+    toggle.addEventListener(
+      "change",
+      function () {
 
-  if (
-    isDark
-  ) {
-
-    button.innerHTML =
-      "☀️";
-
-
-
-    button.classList.remove(
-      "btn-light"
-    );
+        const theme =
+          toggle.checked
+            ? "dark"
+            : "light";
 
 
-
-    button.classList.add(
-      "btn-warning"
-    );
-
-  }
-  else {
-
-    button.innerHTML =
-      "🌙";
+        document.documentElement
+          .setAttribute(
+            "data-bs-theme",
+            theme
+          );
 
 
+        localStorage.setItem(
+          "snmmTheme",
+          theme
+        );
 
-    button.classList.remove(
-      "btn-warning"
-    );
-
-
-
-    button.classList.add(
-      "btn-light"
+      }
     );
 
   }
